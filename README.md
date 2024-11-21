@@ -28,7 +28,7 @@ git clone https://github.com/kardeepakkumar/goodreads-advanced-search.git
 cd goodreads-advanced-search
 ```
 
-### 2. Build and run the docker container
+### 2. Copy the cookie from goodreads
 Go to a goodreads page on your browser, press F12 and copy cookie data.
 Store copied cookie data in goodreads-advanced-search/cookie.txt.
 
