@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Scraper App</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center">Book Scraper App</h1>
+        
+        <!-- Navigation -->
+        <ul class="nav nav-tabs mt-3">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" id="filterBooksTab">Filter Books</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="scrapeGenresTab">Scrape Genres</a>
+            </li>
+        </ul>
+
+        <!-- Filter Books Section -->
+        <div id="filterBooksSection" class="mt-4">
+            <h2>Filter Books</h2>
+            <form method="get">
+                <label>Genres:</label><br>
+                <div class="genre-container">
+                    {% for genre in all_genres %}
+                        <div class="genre-item">
+                            <input type="checkbox" name="genres" value="{{ genre }}" 
+                                   {% if genre in selected_genres %}checked{% endif %}> 
+                            {{ genre }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <br><br>
+                
+                <label>Minimum Ratings:</label>
+                <input type="number" name="min_ratings" value="{{ min_ratings }}" min="0">
+                <br><br>
+                
+                <button type="submit">Apply Filters</button>
+            </form>
+            
+            <style>
+                .genre-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 15px;
+                }
+            
+                .genre-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                }
+            
+                label, button {
+                    font-size: 1rem;
+                    margin-bottom: 10px;
+                }
+            
+                input[type="number"] {
+                    padding: 5px;
+                    width: 100px;
+                }
+            
+                button {
+                    padding: 10px 20px;
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                }
+            
+                button:hover {
+                    background-color: #45a049;
+                }
+            </style>
+            
+
+            <div class="mt-4">
+                <p>Total Books: <span id="totalBooks">{{total_books_count}}</span></p>
+                <p>Filtered Books: {{ filtered_books_count }}</p>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Avg Rating</th>
+                            <th>Num Ratings</th>
+                            <th>Genres</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksTableBody">
+                        {% for book in books %}
+                            <tr>
+                                <td><a href="{{ book['Link'] }}" target="_blank">{{ book['Title'] }}</a></td>
+                                <td>{{ book['Author'] }}</td>
+                                <td>{{ book['Avg Rating'] }}</td>
+                                <td>{{ book['Num Ratings'] }}</td>
+                                <td>{{ book['Genres'] | join(', ') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scrape Genres Section -->
+        <div id="scrapeGenresSection" class="mt-4 d-none">
+            <h2>Scrape Genres</h2>
+            <form id="scrapeForm">
+                <div class="mb-3">
+                    <label for="genreInput" class="form-label">Genre:</label>
+                    <input type="text" class="form-control" id="genreInput" name="genre" required>
+                </div>
+                <button type="button" class="btn btn-success" id="scrapeButton">Scrape</button>
+            </form>
+
+            <!-- Loading Bar -->
+            <div id="loadingBarContainer" class="progress mt-4 d-none">
+                <div id="loadingBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+
+            <div class="mt-4">
+                <h3>Downloaded Genres</h3>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Genre</th>
+                            <th>Books Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="genresTableBody">
+                        {% for genre in all_genres %}
+                            <tr>
+                                <td>{{ genre }}</td>
+                                <td>{{ genre_counts[genre] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Tab navigation
+            const filterBooksSection = document.getElementById("filterBooksSection");
+            const scrapeGenresSection = document.getElementById("scrapeGenresSection");
+            const filterBooksTab = document.getElementById("filterBooksTab");
+            const scrapeGenresTab = document.getElementById("scrapeGenresTab");
+
+            filterBooksTab.addEventListener("click", () => {
+                filterBooksSection.classList.remove("d-none");
+                scrapeGenresSection.classList.add("d-none");
+                filterBooksTab.classList.add("active");
+                scrapeGenresTab.classList.remove("active");
+            });
+
+            scrapeGenresTab.addEventListener("click", () => {
+                scrapeGenresSection.classList.remove("d-none");
+                filterBooksSection.classList.add("d-none");
+                scrapeGenresTab.classList.add("active");
+                filterBooksTab.classList.remove("active");
+            });
+
+            // Scrape genres
+            const scrapeButton = document.getElementById("scrapeButton");
+            const genreInput = document.getElementById("genreInput");
+            const loadingBarContainer = document.getElementById("loadingBarContainer");
+            const loadingBar = document.getElementById("loadingBar");
+
+            scrapeButton.addEventListener("click", () => {
+                scrapeButton.disabled = true;
+                const genre = genreInput.value.trim();
+                if (!genre) {
+                    alert("Please enter a genre!");
+                    return;
+                }
+
+                // Reset the progress bar
+                loadingBar.style.width = "0%";
+                loadingBar.textContent = "0%";
+                loadingBar.setAttribute("aria-valuenow", "0");
+                loadingBarContainer.classList.remove("d-none");
+
+                // Start scraping and updating progress
+                fetch("/scrape", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ genre }),
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error);
+                            });
+                        }
+                        // Poll for progress updates
+                        let interval = setInterval(() => {
+                            fetch("/progress")
+                                .then((res) => res.json())
+                                .then((progressData) => {
+                                    const progress = progressData.progress;
+                                    loadingBar.style.width = `${progress}%`;
+                                    loadingBar.textContent = `${progress}%`;
+                                    loadingBar.setAttribute("aria-valuenow", progress);
+
+                                    if (progress >= 100) {
+                                        scrapeButton.disabled = false;
+                                        clearInterval(interval);
+                                        setTimeout(() => {
+                                            window.location.href = "/";
+                                        }, 1000);
+                                    }
+                                });
+                        }, 1000);
+                    })
+                    .catch((error) => {
+                        alert('Error: ' + error.message);
+                        loadingBarContainer.classList.add("d-none");
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
