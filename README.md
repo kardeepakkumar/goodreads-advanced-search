@@ -15,7 +15,8 @@ The backend scrapes Goodreads pages and stores book information in a JSON Lines 
 
 Click the image below to watch the demo video:
 
-[![Demo of Goodreads Advanced Search](demo.png)](demo.mp4)
+[![Demo of Goodreads Advanced Search](demo.png)](https://youtu.be/zUempuYsEoQ)
+
 
 ## Requirements
 
