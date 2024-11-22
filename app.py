@@ -63,9 +63,13 @@ def scrape_genre_in_background(genre):
     scraping_progress["progress"] = 0
 
     for page in range(1, 26):
+        start_time = time.time()
         scrape_genre(genre, page)
         scraping_progress["progress"] += 4
-        time.sleep(1)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        if elapsed_time < 2:
+            time.sleep(2 - elapsed_time)
 
 @app.route("/scrape", methods=["POST"])
 def scrape():
