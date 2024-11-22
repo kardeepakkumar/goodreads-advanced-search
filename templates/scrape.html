@@ -1,0 +1,32 @@
+<h2>Scrape Genres</h2>
+<form id="scrapeForm">
+    <div class="mb-3">
+        <label for="genreInput" class="form-label">Genre:</label>
+        <input type="text" class="form-control" id="genreInput" name="genre" required>
+    </div>
+    <button type="button" class="btn btn-success" id="scrapeButton">Scrape</button>
+</form>
+
+<div id="loadingBarContainer" class="progress mt-4 d-none">
+    <div id="loadingBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+</div>
+
+<div class="mt-4">
+    <h3>Downloaded Genres</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Genre</th>
+                <th>Books Count</th>
+            </tr>
+        </thead>
+        <tbody id="genresTableBody">
+            {% for genre in all_genres %}
+                <tr>
+                    <td>{{ genre }}</td>
+                    <td>{{ genre_counts[genre] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

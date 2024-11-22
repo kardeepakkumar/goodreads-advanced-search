@@ -6,7 +6,7 @@ import time
 import threading
 import math
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 scraping_progress = {"progress": 0}
 
 BOOKS_FILE = "books_raw.jl"
