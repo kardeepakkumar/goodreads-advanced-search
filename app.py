@@ -4,6 +4,7 @@ import json
 from scraper import scrape_genre
 import time
 import threading
+import math
 
 app = Flask(__name__)
 scraping_progress = {"progress": 0}
@@ -45,17 +46,25 @@ def index():
 
     filtered_books.sort(key=lambda b: float(b["Avg Rating"]), reverse=True)
     filtered_books_count = len(filtered_books)
-    
 
+    results_per_page = 20
+    current_page = int(request.args.get('page', 1))
+    start = (current_page - 1) * results_per_page
+    end = min(start + results_per_page, filtered_books_count)
+    paginated_books = filtered_books[start:end]
+    total_pages = math.ceil(filtered_books_count/results_per_page)
+    
     return render_template(
         "index.html",
-        books=filtered_books,
+        books=paginated_books,
         total_books_count=total_books_count,
         filtered_books_count=filtered_books_count,
         all_genres=all_genres,
         genre_counts=genre_counts,
         selected_genres=selected_genres,
         min_ratings=min_ratings,
+        current_page=current_page,
+        total_pages=total_pages
     )
 
 def scrape_genre_in_background(genre):
