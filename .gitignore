@@ -1,7 +1,8 @@
 # Python
 *.pyc
 __pycache__/
+tests/__pycache__/
+.pytest_cache
 
 cookie.txt
 commands.txt
-books_raw.jl

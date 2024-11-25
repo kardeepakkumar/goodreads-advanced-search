@@ -1,0 +1,7 @@
+Flask==2.3.2
+beautifulsoup4==4.12.2
+requests==2.31.0
+selenium==4.26.1
+pytest==8.3.3
+psutil==6.1.0
+filelock==3.16.1

@@ -3,6 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import time
+from filelock import FileLock
 
 def load_cookies(file_path="cookie.txt"):
     with open(file_path, "r") as file:
@@ -22,6 +23,8 @@ HEADERS = {
 COOKIES = load_cookies()
 
 BOOKS_FILE = "books_raw.jl"
+LOCK_FILE = "books_raw.lock"
+
 
 def fetch_books_from_page(url, genre):
     response = requests.get(url, headers=HEADERS, cookies=COOKIES)
@@ -70,25 +73,28 @@ def fetch_books_from_page(url, genre):
     return books
 
 def save_books(books):
-    existing_books = {}
-    if os.path.exists(BOOKS_FILE):
-        with open(BOOKS_FILE, "r", encoding="utf-8") as file:
-            for line in file:
-                book = json.loads(line)
+    lock = FileLock(LOCK_FILE)
+    with lock:
+        existing_books = {}
+        if os.path.exists(BOOKS_FILE):
+            with open(BOOKS_FILE, "r", encoding="utf-8") as file:
+                for line in file:
+                    book = json.loads(line)
+                    existing_books[book["Link"]] = book
+
+        for book in books:
+            if book["Link"] in existing_books:
+                if book["Genres"][0] not in existing_books[book["Link"]]["Genres"]:
+                    existing_books[book["Link"]]["Genres"].append(book["Genres"][0])
+            else:
                 existing_books[book["Link"]] = book
 
-    for book in books:
-        if book["Link"] in existing_books:
-            if book["Genres"][0] not in existing_books[book["Link"]]["Genres"]:
-                existing_books[book["Link"]]["Genres"].append(book["Genres"][0])
-        else:
-            existing_books[book["Link"]] = book
-
-    with open(BOOKS_FILE, "w", encoding="utf-8") as file:
-        for book in existing_books.values():
-            file.write(json.dumps(book) + "\n")
+        with open(BOOKS_FILE, "w", encoding="utf-8") as file:
+            for book in existing_books.values():
+                file.write(json.dumps(book) + "\n")
 
 def scrape_genre(genre, page=1):
     url = f"https://www.goodreads.com/shelf/show/{genre}?page={page}"
     all_books = fetch_books_from_page(url, genre)
     save_books(all_books)
+    return all_books

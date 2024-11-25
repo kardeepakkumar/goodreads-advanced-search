@@ -42,7 +42,7 @@ export function setupPagination(totalPages, currentPage) {
         paginationContainer.appendChild(prevLi);
     }
 
-    const maxVisiblePages = 7; // Adjust as needed
+    const maxVisiblePages = 7;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = startPage + maxVisiblePages - 1;
 
