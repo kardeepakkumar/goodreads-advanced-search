@@ -11,4 +11,4 @@ def convert_jl_to_json(input_path, output_path):
 
     print(f"Converted JL to JSON and saved at {output_path}")
 
-convert_jl_to_json('books_raw.jl', 'github_page/books.json')
+convert_jl_to_json('books_raw.jl', 'docs/books.json')
