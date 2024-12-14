@@ -18,14 +18,16 @@ body {
     margin-bottom: 20px;
   }
   
-  #genres-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+  .genre-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
   }
-  
-  #genres-list label {
-    margin-right: 10px;
+
+  .genre-item {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
   }
   
   table {

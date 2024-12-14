@@ -21,10 +21,14 @@ async function fetchBooks() {
     const genresSet = new Set();
     books.forEach(book => book.Genres.forEach(genre => genresSet.add(genre)));
     const genresList = document.getElementById('genres-list');
+    genresList.innerHTML = '';
     genresSet.forEach(genre => {
-      const label = document.createElement('label');
-      label.innerHTML = `<input type="checkbox" value="${genre}"> ${genre}`;
-      genresList.appendChild(label);
+        const div = document.createElement('div');
+        div.classList.add('genre-item');
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${genre}"> ${genre}`;
+        div.appendChild(label);
+        genresList.appendChild(div);
     });
   }
   
