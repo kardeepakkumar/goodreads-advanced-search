@@ -73,12 +73,15 @@ async function fetchBooks() {
     const currentUrl = new URL(window.location.href);
     const searchParams = new URLSearchParams(currentUrl.search);
 
+    // Clear previous pagination
+    paginationContainer.innerHTML = '';
+
     function changePage(page) {
         searchParams.set('page', page);
+        currentUrl.search = searchParams.toString();
         currentPage = page;
         renderBooks();
         renderPagination();
-        return `${currentUrl.pathname}?${searchParams.toString()}`;
     }
 
     function createPageItem(page, text = null, isEllipsis = false) {
@@ -90,10 +93,13 @@ async function fetchBooks() {
 
         const a = document.createElement('a');
         a.classList.add('page-link');
-        a.href = isEllipsis ? '#' : changePage(page);
+        a.href = isEllipsis ? '#' : 'javascript:void(0)';
         a.textContent = text || page;
+
         if (isEllipsis) {
             a.setAttribute('aria-disabled', 'true');
+        } else {
+            a.addEventListener('click', () => changePage(page));
         }
 
         li.appendChild(a);
@@ -107,9 +113,10 @@ async function fetchBooks() {
 
         const prevA = document.createElement('a');
         prevA.classList.add('page-link');
-        prevA.href = changePage(currentPage - 1);
+        prevA.href = 'javascript:void(0)';
         prevA.setAttribute('aria-label', 'Previous');
         prevA.innerHTML = '&laquo;';
+        prevA.addEventListener('click', () => changePage(currentPage - 1));
 
         prevLi.appendChild(prevA);
         paginationContainer.appendChild(prevLi);
@@ -155,15 +162,15 @@ async function fetchBooks() {
 
         const nextA = document.createElement('a');
         nextA.classList.add('page-link');
-        nextA.href = changePage(currentPage + 1);
+        nextA.href = 'javascript:void(0)';
         nextA.setAttribute('aria-label', 'Next');
         nextA.innerHTML = '&raquo;';
+        nextA.addEventListener('click', () => changePage(currentPage + 1));
 
         nextLi.appendChild(nextA);
         paginationContainer.appendChild(nextLi);
     }
   }
-
   
   // Event Listeners
   document.getElementById('apply-filters').addEventListener('click', () => {
