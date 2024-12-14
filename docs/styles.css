@@ -14,7 +14,14 @@ body {
     text-align: center;
     margin-bottom: 20px;
   }
-  
+
+  button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
   .filters {
     margin-bottom: 20px;
   }
