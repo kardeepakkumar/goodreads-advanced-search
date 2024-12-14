@@ -49,27 +49,25 @@ async function fetchBooks() {
   
   // Render books in the table
   function renderBooks() {
+    const bookList = document.getElementById('book-list');
+    bookList.innerHTML = '';
+  
     const start = (currentPage - 1) * booksPerPage;
-    const end = start + booksPerPage;
-
-    if (start >= filteredBooks.length) {
-        currentPage = Math.ceil(filteredBooks.length / booksPerPage) || 1;
-        renderBooks();
-        renderPagination();
-        return;
-    }
-
+    const end = currentPage * booksPerPage;
     const currentBooks = filteredBooks.slice(start, end);
-    const booksContainer = document.getElementById('books');
-    booksContainer.innerHTML = ''; // Clear previous entries
-
+  
     currentBooks.forEach(book => {
-        const bookElement = document.createElement('div');
-        bookElement.textContent = `${book.Title} by ${book.Author}`;
-        booksContainer.appendChild(bookElement);
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><a href="${book.Link}" target="_blank">${book.Title}</a></td>
+        <td>${book.Author}</td>
+        <td>${book["Avg Rating"]}</td>
+        <td>${book["Num Ratings"]}</td>
+        <td>${book.Genres.join(', ')}</td>
+      `;
+      bookList.appendChild(row);
     });
   }
-
   
   // Render pagination controls
   function renderPagination() {
@@ -82,7 +80,7 @@ async function fetchBooks() {
     paginationContainer.innerHTML = '';
 
     function changePage(page) {
-      if (page !== currentPage) { // Avoid redundant updates
+      if (page !== currentPage) {
           currentPage = page;
           renderBooks();
           renderPagination();
