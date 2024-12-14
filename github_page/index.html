@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter Books</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Filter Books</h1>
+    
+    <!-- Filters Section -->
+    <div class="filters">
+      <h3>Genres</h3>
+      <div id="genres-list">
+        <!-- Genres checkboxes will be dynamically populated -->
+      </div>
+      <h3>Minimum Ratings</h3>
+      <input type="number" id="min-ratings" min="0" value="0">
+      <button id="apply-filters">Apply Filters</button>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Avg Rating</th>
+            <th>Num Ratings</th>
+            <th>Genres</th>
+          </tr>
+        </thead>
+        <tbody id="book-list">
+          <!-- Filtered book data will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination">
+      <!-- Pagination controls will be dynamically populated -->
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
