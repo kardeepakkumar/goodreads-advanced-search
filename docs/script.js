@@ -49,6 +49,8 @@ function applyFilters() {
   
 // Render books in the table
 function renderBooks() {
+  document.getElementById('total-books-count').textContent = "Total Books Count: " + books.length;
+  document.getElementById('filtered-books-count').textContent = "Filtered Books Count: " + filteredBooks.length;  
   const bookList = document.getElementById('book-list');
   bookList.innerHTML = '';
 
