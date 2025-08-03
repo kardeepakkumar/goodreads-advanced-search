@@ -1,50 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Goodreads Advanced Search</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="book-search-styles.css">
 </head>
 <body>
+  <!-- Theme Toggle -->
+  <div class="theme-toggle-container">
+    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+      <i class="fas fa-sun"></i>
+      <i class="fas fa-moon"></i>
+    </button>
+  </div>
+
   <div class="container">
-    <h1>Goodreads Advanced Search</h1>
+    <header class="app-header">
+      <h1 class="app-title">Goodreads Advanced Search</h1>
+      <p class="app-subtitle">Discover books with powerful filtering</p>
+    </header>
     
-    <!-- Filters Section -->
-    <div class="filters">
-      <h3>Genres</h3>
-      <div id="genres-list" class="genre-container">
-        <!-- Genres checkboxes will be dynamically populated -->
+    <!-- Advanced Filters Section -->
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3><i class="fas fa-filter"></i> Advanced Genre Filters</h3>
+        <small class="filter-help">Build complex queries using AND, OR, NOT operations</small>
       </div>
-      <label>Minimum Ratings:</label>
-      <input type="number" id="min-ratings" min="0" value="0">
-      <br><br>
-      <button id="apply-filters" type="submit">Apply Filters</button>
+      
+      <!-- Filter Builder -->
+      <div class="filter-builder">
+        <div id="filter-expression" class="filter-expression">
+          <span class="no-filters-message">No filters applied - showing all books</span>
+        </div>
+        
+        <div class="filter-controls">
+          <div class="add-filter-section">
+            <select id="genre-dropdown" class="genre-dropdown" placeholder="Search genres...">
+              <option value="">Select a genre...</option>
+            </select>
+            <button id="add-filter-btn" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add Filter
+            </button>
+          </div>
+          
+          <div class="logic-operators">
+            <button class="logic-btn" data-operator="AND">AND</button>
+            <button class="logic-btn" data-operator="OR">OR</button>
+            <button class="logic-btn" data-operator="NOT">NOT</button>
+            <button class="logic-btn" data-operator="(">(</button>
+            <button class="logic-btn" data-operator=")">)</button>
+          </div>
+          
+          <div class="filter-actions">
+            <button id="clear-filters-btn" class="btn btn-outline-secondary">
+              <i class="fas fa-trash"></i> Clear All
+            </button>
+            <button id="apply-filters-btn" class="btn btn-success">
+              <i class="fas fa-search"></i> Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional Filters -->
+      <div class="additional-filters">
+        <div class="rating-filter">
+          <label for="min-ratings">Minimum Ratings:</label>
+          <input type="number" id="min-ratings" min="0" value="0" class="form-control">
+        </div>
+      </div>
     </div>
 
     <!-- Results Section -->
-    <div id="results">
-      <p id="total-books-count"></p>
-      <p id="filtered-books-count"></p>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Avg Rating</th>
-            <th>Num Ratings</th>
-            <th>Genres</th>
-          </tr>
-        </thead>
-        <tbody id="book-list">
-          <!-- Filtered book data will be populated here -->
-        </tbody>
-      </table>
+    <div class="results-panel">
+      <div class="results-header">
+        <div class="results-stats">
+          <span id="total-books-count" class="stat-item"></span>
+          <span id="filtered-books-count" class="stat-item"></span>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <table class="books-table">
+          <thead>
+            <tr>
+              <th><i class="fas fa-book"></i> Title</th>
+              <th><i class="fas fa-user"></i> Author</th>
+              <th><i class="fas fa-star"></i> Rating</th>
+              <th><i class="fas fa-users"></i> Reviews</th>
+              <th><i class="fas fa-tags"></i> Genres</th>
+            </tr>
+          </thead>
+          <tbody id="book-list">
+            <!-- Filtered book data will be populated here -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Pagination -->
-    <nav aria-label="Page navigation">
+    <nav aria-label="Book pagination" class="pagination-nav">
       <ul class="pagination justify-content-center" id="pagination"></ul>
     </nav>
   </div>
