@@ -13,7 +13,7 @@ The backend scrapes Goodreads pages and stores book information in a JSON Lines 
   
 ## Demo
 
-Filter feature is available on https://kardeepakkumar.github.io/goodreads-advanced-search
+Filter feature is available on https://kardeepakkumar.github.io/goodreads-advanced-search.
 
 Click the image below to watch the demo video:
 
