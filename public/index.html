@@ -32,8 +32,13 @@
       
       <!-- Filter Builder -->
       <div class="filter-builder">
-        <div id="filter-expression" class="filter-expression">
-          <span class="no-filters-message">No filters applied - showing all books</span>
+        <div class="filter-expression-container">
+          <textarea id="filter-expression" class="filter-expression-input" 
+                    placeholder="Type your filter expression here (e.g., horror AND technology OR (scifi AND NOT romance))" 
+                    rows="3"></textarea>
+          <div class="filter-expression-help">
+            <small>💡 Use AND, OR, NOT operators with parentheses. Genres are case-insensitive. Example: <code>(horror OR thriller) AND NOT romance</code></small>
+          </div>
         </div>
         
         <div class="filter-controls">

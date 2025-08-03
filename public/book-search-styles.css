@@ -161,26 +161,56 @@ body {
   font-style: italic;
 }
 
-/* Filter Expression Display */
-.filter-expression {
-  background: var(--bg-accent);
-  border: 2px dashed var(--border-color);
-  border-radius: 8px;
-  padding: 20px;
+/* Filter Expression Input */
+.filter-expression-container {
   margin-bottom: 20px;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-family: 'Courier New', monospace;
 }
 
-.no-filters-message {
+.filter-expression-input {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.filter-expression-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+.filter-expression-input::placeholder {
   color: var(--text-muted);
   font-style: italic;
-  width: 100%;
-  text-align: center;
+}
+
+.filter-expression-help {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-accent);
+  border-radius: 6px;
+  border-left: 4px solid var(--accent-primary);
+}
+
+.filter-expression-help small {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.filter-expression-help code {
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 .filter-token {

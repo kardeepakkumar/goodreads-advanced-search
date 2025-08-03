@@ -53,47 +53,98 @@ class ThemeManager {
   }
 }
 
-// Filter Expression Parser
+// Advanced Filter Expression Parser with Text Support
 class FilterExpressionParser {
-  constructor(books) {
+  constructor(books, availableGenres) {
     this.books = books;
+    this.availableGenres = availableGenres.map(g => g.toLowerCase());
   }
 
-  // Parse and evaluate the filter expression
-  evaluate(expression) {
-    if (!expression || expression.length === 0) {
+  // Parse and evaluate the filter expression from text
+  evaluate(expressionText) {
+    if (!expressionText || expressionText.trim() === '') {
       return this.books; // Return all books if no filter
     }
 
     try {
-      const tokens = this.tokenize(expression);
+      console.log('Parsing expression:', expressionText);
+      const tokens = this.tokenizeText(expressionText);
+      console.log('Tokens:', tokens);
+      
+      if (tokens.length === 0) {
+        return this.books;
+      }
+      
       const result = this.parseExpression(tokens);
-      return this.books.filter(book => this.evaluateForBook(result, book));
+      console.log('Parsed AST:', result);
+      
+      const filteredBooks = this.books.filter(book => this.evaluateForBook(result, book));
+      console.log(`Filter applied: ${filteredBooks.length}/${this.books.length} books match`);
+      
+      return filteredBooks;
     } catch (error) {
       console.error('Filter expression error:', error);
+      // Show error to user but don't break the app
+      this.showParseError(error.message);
       return this.books; // Return all books on error
     }
   }
 
-  tokenize(expression) {
+  // Tokenize text input with proper space handling
+  tokenizeText(text) {
     const tokens = [];
-    for (const item of expression) {
-      if (typeof item === 'string') {
-        if (['AND', 'OR', 'NOT', '(', ')'].includes(item)) {
-          tokens.push({ type: 'operator', value: item });
+    // Split by spaces but preserve quoted strings and handle operators
+    const regex = /\s*(\(|\)|AND|OR|NOT|[^\s()]+)\s*/gi;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+      const token = match[1].trim();
+      if (token) {
+        if (['AND', 'OR', 'NOT', '(', ')'].includes(token.toUpperCase())) {
+          tokens.push({ type: 'operator', value: token.toUpperCase() });
         } else {
-          tokens.push({ type: 'genre', value: item });
+          // This is a genre - validate it exists
+          const normalizedGenre = this.findMatchingGenre(token);
+          if (normalizedGenre) {
+            tokens.push({ type: 'genre', value: normalizedGenre });
+          } else {
+            console.warn(`Genre "${token}" not found in available genres`);
+            // Still add it as a token but mark as invalid
+            tokens.push({ type: 'genre', value: token, invalid: true });
+          }
         }
       }
     }
+    
     return tokens;
   }
 
+  // Find exact matching genre (case-insensitive)
+  findMatchingGenre(searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // First try exact match
+    const exactMatch = this.availableGenres.find(genre => genre === searchLower);
+    if (exactMatch) {
+      return exactMatch;
+    }
+    
+    // If no exact match, try to find the original case version
+    for (const book of this.books) {
+      for (const genre of book.Genres) {
+        if (genre.toLowerCase() === searchLower) {
+          return genre; // Return with original case
+        }
+      }
+    }
+    
+    return null;
+  }
+
   parseExpression(tokens) {
-    // Simple recursive descent parser for logical expressions
     let index = 0;
 
-    function parseOr() {
+    const parseOr = () => {
       let left = parseAnd();
       
       while (index < tokens.length && tokens[index].value === 'OR') {
@@ -103,9 +154,9 @@ class FilterExpressionParser {
       }
       
       return left;
-    }
+    };
 
-    function parseAnd() {
+    const parseAnd = () => {
       let left = parseNot();
       
       while (index < tokens.length && tokens[index].value === 'AND') {
@@ -115,9 +166,9 @@ class FilterExpressionParser {
       }
       
       return left;
-    }
+    };
 
-    function parseNot() {
+    const parseNot = () => {
       if (index < tokens.length && tokens[index].value === 'NOT') {
         index++; // consume NOT
         const operand = parsePrimary();
@@ -125,36 +176,48 @@ class FilterExpressionParser {
       }
       
       return parsePrimary();
-    }
+    };
 
-    function parsePrimary() {
+    const parsePrimary = () => {
       if (index < tokens.length && tokens[index].value === '(') {
         index++; // consume (
         const expr = parseOr();
         if (index < tokens.length && tokens[index].value === ')') {
           index++; // consume )
+        } else {
+          throw new Error('Missing closing parenthesis');
         }
         return expr;
       }
       
       if (index < tokens.length && tokens[index].type === 'genre') {
-        const genre = tokens[index].value;
+        const token = tokens[index];
         index++;
-        return { type: 'genre', value: genre };
+        if (token.invalid) {
+          throw new Error(`Unknown genre: "${token.value}"`);
+        }
+        return { type: 'genre', value: token.value };
       }
       
       throw new Error('Unexpected token or end of expression');
-    }
+    };
 
-    return parseOr();
+    const result = parseOr();
+    
+    if (index < tokens.length) {
+      throw new Error(`Unexpected token: "${tokens[index].value}"`);
+    }
+    
+    return result;
   }
 
+  // Exact genre matching - no substring matching
   evaluateForBook(node, book) {
     switch (node.type) {
       case 'genre':
-        return book.Genres.some(genre => 
-          genre.toLowerCase().includes(node.value.toLowerCase()) ||
-          node.value.toLowerCase().includes(genre.toLowerCase())
+        // Exact match only - case insensitive
+        return book.Genres.some(bookGenre => 
+          bookGenre.toLowerCase() === node.value.toLowerCase()
         );
       case 'and':
         return this.evaluateForBook(node.left, book) && this.evaluateForBook(node.right, book);
@@ -166,36 +229,67 @@ class FilterExpressionParser {
         return true;
     }
   }
+
+  showParseError(message) {
+    // Show error in the UI
+    const helpDiv = document.querySelector('.filter-expression-help');
+    if (helpDiv) {
+      helpDiv.innerHTML = `<small style="color: var(--accent-danger);">⚠️ Parse Error: ${message}</small>`;
+      setTimeout(() => {
+        helpDiv.innerHTML = '<small>💡 Use AND, OR, NOT operators with parentheses. Genres are case-insensitive. Example: <code>(horror OR thriller) AND NOT romance</code></small>';
+      }, 3000);
+    }
+  }
 }
 
 // Filter Expression UI Manager
 class FilterExpressionUI {
   constructor() {
-    this.expression = [];
     this.setupEventListeners();
   }
 
   setupEventListeners() {
     console.log('Setting up filter UI event listeners');
     
-    // Add filter button
+    // Text input for direct editing
+    const textInput = document.getElementById('filter-expression');
+    if (textInput) {
+      // Auto-apply filters as user types (with debounce)
+      textInput.addEventListener('input', () => {
+        clearTimeout(this.inputTimeout);
+        this.inputTimeout = setTimeout(() => {
+          console.log('Filter text changed:', textInput.value);
+          this.applyFilters();
+        }, 500); // 500ms debounce
+      });
+      
+      // Apply filters on Enter key
+      textInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.applyFilters();
+        }
+      });
+    } else {
+      console.error('Filter expression input not found');
+    }
+    
+    // Add filter button - inserts genre at cursor
     const addBtn = document.getElementById('add-filter-btn');
     if (addBtn) {
       addBtn.addEventListener('click', () => {
         console.log('Add filter button clicked');
         this.addGenreFilter();
       });
-    } else {
-      console.error('Add filter button not found');
     }
 
-    // Logic operator buttons
+    // Logic operator buttons - insert at cursor
     const logicBtns = document.querySelectorAll('.logic-btn');
     console.log('Found logic buttons:', logicBtns.length);
     logicBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         console.log('Logic button clicked:', btn.dataset.operator);
-        this.addOperator(btn.dataset.operator);
+        this.insertAtCursor(btn.dataset.operator);
       });
     });
 
@@ -228,67 +322,71 @@ class FilterExpressionUI {
     const selectedGenre = dropdown.value;
     console.log('Selected genre:', selectedGenre);
     
-    if (selectedGenre && selectedGenre.trim() !== '' && !this.expression.includes(selectedGenre)) {
-      this.expression.push(selectedGenre);
+    if (selectedGenre && selectedGenre.trim() !== '') {
+      this.insertAtCursor(selectedGenre);
       dropdown.value = ''; // Reset dropdown
-      this.updateExpressionDisplay();
-      console.log('Genre added to expression:', this.expression);
-    } else if (!selectedGenre || selectedGenre.trim() === '') {
-      console.log('No genre selected');
     } else {
-      console.log('Genre already in expression');
+      console.log('No genre selected');
     }
   }
 
-  addOperator(operator) {
-    if (this.expression.length > 0 || operator === '(' || operator === 'NOT') {
-      this.expression.push(operator);
-      this.updateExpressionDisplay();
+  insertAtCursor(text) {
+    const textInput = document.getElementById('filter-expression');
+    if (!textInput) return;
+    
+    const start = textInput.selectionStart;
+    const end = textInput.selectionEnd;
+    const currentValue = textInput.value;
+    
+    // Add spaces around operators for better readability
+    let insertText = text;
+    if (['AND', 'OR', 'NOT'].includes(text)) {
+      insertText = ` ${text} `;
+    } else if (text === '(') {
+      insertText = '(';
+    } else if (text === ')') {
+      insertText = ')';
+    } else {
+      // For genres, add space if needed
+      const beforeChar = start > 0 ? currentValue[start - 1] : '';
+      const afterChar = end < currentValue.length ? currentValue[end] : '';
+      
+      if (beforeChar && beforeChar !== ' ' && beforeChar !== '(') {
+        insertText = ' ' + insertText;
+      }
+      if (afterChar && afterChar !== ' ' && afterChar !== ')') {
+        insertText = insertText + ' ';
+      }
     }
-  }
-
-  removeToken(index) {
-    this.expression.splice(index, 1);
-    this.updateExpressionDisplay();
-  }
-
-  clearFilters() {
-    this.expression = [];
-    this.updateExpressionDisplay();
+    
+    const newValue = currentValue.substring(0, start) + insertText + currentValue.substring(end);
+    textInput.value = newValue;
+    
+    // Set cursor position after inserted text
+    const newCursorPos = start + insertText.length;
+    textInput.setSelectionRange(newCursorPos, newCursorPos);
+    textInput.focus();
+    
+    // Trigger filter application
     this.applyFilters();
   }
 
-  updateExpressionDisplay() {
-    const container = document.getElementById('filter-expression');
-    container.innerHTML = '';
-
-    if (this.expression.length === 0) {
-      container.innerHTML = '<span class="no-filters-message">No filters applied - showing all books</span>';
-      return;
+  clearFilters() {
+    const textInput = document.getElementById('filter-expression');
+    if (textInput) {
+      textInput.value = '';
+      textInput.focus();
     }
-
-    this.expression.forEach((token, index) => {
-      const tokenElement = document.createElement('span');
-      
-      if (['AND', 'OR', 'NOT', '(', ')'].includes(token)) {
-        tokenElement.className = 'operator-token';
-        tokenElement.textContent = token;
-      } else {
-        tokenElement.className = 'filter-token';
-        tokenElement.innerHTML = `
-          ${token}
-          <span class="remove-token" onclick="filterUI.removeToken(${index})">&times;</span>
-        `;
-      }
-      
-      container.appendChild(tokenElement);
-    });
+    this.applyFilters();
   }
 
   applyFilters() {
-    filterExpression = [...this.expression];
-    currentPage = 1;
-    applyBookFilters();
+    const textInput = document.getElementById('filter-expression');
+    if (textInput) {
+      filterExpression = textInput.value.trim();
+      currentPage = 1;
+      applyBookFilters();
+    }
   }
 }
 
@@ -363,9 +461,17 @@ function populateGenreDropdown() {
 function applyBookFilters() {
   const minRatings = parseInt(document.getElementById('min-ratings').value, 10) || 0;
   
-  // Apply genre filters using the expression parser
-  const parser = new FilterExpressionParser(allBooks);
-  let genreFilteredBooks = parser.evaluate(filterExpression);
+  // Apply genre filters using the text-based expression parser
+  const parser = new FilterExpressionParser(allBooks, availableGenres);
+  let genreFilteredBooks;
+  
+  if (typeof filterExpression === 'string') {
+    // New text-based filtering
+    genreFilteredBooks = parser.evaluate(filterExpression);
+  } else {
+    // Fallback for any remaining array-based expressions
+    genreFilteredBooks = allBooks;
+  }
   
   // Apply rating filter
   filteredBooks = genreFilteredBooks.filter(book => {
@@ -537,7 +643,7 @@ async function initializeApp() {
     
     // Initial render with empty filter (show all books)
     console.log('Applying initial filters...');
-    filterExpression = []; // Ensure empty filter initially
+    filterExpression = ''; // Ensure empty filter initially
     applyBookFilters();
     
     console.log(`Application initialized successfully: ${allBooks.length} books with ${availableGenres.length} unique genres`);
