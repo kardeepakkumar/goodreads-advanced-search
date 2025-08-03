@@ -1,25 +1,25 @@
-// Load books.json dynamically
-async function fetchBooks() {
-  const response = await fetch('books.json');
+// Load goodreads books data dynamically
+async function loadBooksData() {
+  const response = await fetch('goodreads-books-data.json');
   return response.json();
 }
 
-let books = [];
+let allBooks = [];
 let filteredBooks = [];
 let currentPage = 1;
-const booksPerPage = 10;
+const BOOKS_PER_PAGE = 10;
 
-// Initialize the app
-async function init() {
-  books = await fetchBooks();
-  populateGenres();
-  applyFilters();
+// Initialize the book search application
+async function initializeApp() {
+  allBooks = await loadBooksData();
+  populateGenreFilters();
+  applyBookFilters();
 }
   
-  // Populate genres dynamically
-function populateGenres() {
+  // Populate genre filter checkboxes dynamically
+function populateGenreFilters() {
   const genresSet = new Set();
-  books.forEach(book => book.Genres.forEach(genre => genresSet.add(genre)));
+  allBooks.forEach(book => book.Genres.forEach(genre => genresSet.add(genre)));
   const genresList = document.getElementById('genres-list');
   genresSet.forEach(genre => {
       const div = document.createElement('div');
@@ -31,31 +31,31 @@ function populateGenres() {
   });
 }
   
-// Apply filters and render books
-function applyFilters() {
+// Apply selected filters and render filtered books
+function applyBookFilters() {
   const selectedGenres = Array.from(document.querySelectorAll('#genres-list input:checked')).map(input => input.value);
   const minRatings = parseInt(document.getElementById('min-ratings').value, 10) || 0;
 
-  filteredBooks = books.filter(book => {
+  filteredBooks = allBooks.filter(book => {
     const hasGenres = selectedGenres.length === 0 || book.Genres.some(genre => selectedGenres.includes(genre));
     const hasRatings = parseInt(book["Num Ratings"].replace(/,/g, ''), 10) >= minRatings;
     return hasGenres && hasRatings;
   });
 
   filteredBooks.sort((a, b) => parseFloat(b["Avg Rating"]) - parseFloat(a["Avg Rating"]));
-  renderBooks();
-  renderPagination();
+  renderBookTable();
+  renderPaginationControls();
 }
   
-// Render books in the table
-function renderBooks() {
-  document.getElementById('total-books-count').textContent = "Total Books Count: " + books.length;
+// Render filtered books in the results table
+function renderBookTable() {
+  document.getElementById('total-books-count').textContent = "Total Books Count: " + allBooks.length;
   document.getElementById('filtered-books-count').textContent = "Filtered Books Count: " + filteredBooks.length;  
   const bookList = document.getElementById('book-list');
   bookList.innerHTML = '';
 
-  const start = (currentPage - 1) * booksPerPage;
-  const end = currentPage * booksPerPage;
+  const start = (currentPage - 1) * BOOKS_PER_PAGE;
+  const end = currentPage * BOOKS_PER_PAGE;
   const currentBooks = filteredBooks.slice(start, end);
 
   currentBooks.forEach(book => {
@@ -71,9 +71,9 @@ function renderBooks() {
   });
 }
 
-// Render pagination controls
-function renderPagination() {
-  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
+// Render pagination navigation controls
+function renderPaginationControls() {
+  const totalPages = Math.ceil(filteredBooks.length / BOOKS_PER_PAGE);
   const paginationContainer = document.getElementById('pagination');
   const currentUrl = new URL(window.location.href);
   const searchParams = new URLSearchParams(currentUrl.search);
@@ -84,8 +84,8 @@ function renderPagination() {
   function changePage(page) {
     if (page !== currentPage) {
         currentPage = page;
-        renderBooks();
-        renderPagination();
+        renderBookTable();
+        renderPaginationControls();
     }
 }  
 
@@ -181,7 +181,7 @@ function renderPagination() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('apply-filters').addEventListener('click', () => {
       currentPage = 1;
-      applyFilters();
+      applyBookFilters();
   });
-  init(); 
+  initializeApp(); 
 });
