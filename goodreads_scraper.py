@@ -26,7 +26,7 @@ BOOKS_FILE = "books_raw.jl"
 LOCK_FILE = "books_raw.lock"
 
 
-def fetch_books_from_page(url, genre):
+def extract_books_from_page(url, genre):
     response = requests.get(url, headers=HEADERS, cookies=COOKIES)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
@@ -51,9 +51,9 @@ def fetch_books_from_page(url, genre):
             if rating_info:
                 rating_text = rating_info.text.strip()
                 avg_rating = rating_text.split('avg rating ')[1].split(' —')[0]
-                temp_num_ratings = rating_text.split(' —')[1].split(' ratings')[0].split('\n')[1]
+                raw_ratings_text = rating_text.split(' —')[1].split(' ratings')[0].split('\n')[1]
                 num_ratings = ""
-                for char in temp_num_ratings:
+                for char in raw_ratings_text:
                     if ord(char) >= ord('0') and ord(char) <= ord('9'):
                         num_ratings += char
 
@@ -95,6 +95,6 @@ def save_books(books):
 
 def scrape_genre(genre, page=1):
     url = f"https://www.goodreads.com/shelf/show/{genre}?page={page}"
-    all_books = fetch_books_from_page(url, genre)
+    all_books = extract_books_from_page(url, genre)
     save_books(all_books)
     return all_books

@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 import json
-from scraper import scrape_genre
+from goodreads_scraper import scrape_genre
 import time
 import threading
-from filter_books import filter_books
+from book_filter import filter_books
 
 app = Flask(__name__, static_url_path='/static')
 scraping_progress = {"progress": 0}
@@ -18,7 +18,7 @@ def index():
     books_data = filter_books(filters)
     return render_template("index.html", **books_data)
 
-def scrape_genre_in_background(genre):
+def scrape_genre_async(genre):
     global scraping_progress
     scraping_progress["progress"] = 0
 
@@ -36,7 +36,7 @@ def scrape():
     data = request.json
     genre = data.get("genre")
 
-    scrape_thread = threading.Thread(target=scrape_genre_in_background, args=(genre,))
+    scrape_thread = threading.Thread(target=scrape_genre_async, args=(genre,))
     scrape_thread.start()
 
     return jsonify({"message": "Scraping started!"})

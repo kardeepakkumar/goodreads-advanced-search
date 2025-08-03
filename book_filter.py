@@ -4,7 +4,7 @@ import math
 
 BOOKS_FILE = "books_raw.jl"
 
-def load_books():
+def load_books_from_file():
     books = []
     if os.path.exists(BOOKS_FILE):
         with open(BOOKS_FILE, "r", encoding="utf-8") as file:
@@ -16,7 +16,7 @@ def filter_books(filters):
     selected_genres = filters.get("selected_genres", [])
     min_ratings = filters.get("min_ratings", 0)
     current_page = filters.get("current_page", 1)
-    books = load_books()
+    books = load_books_from_file()
 
     total_books_count = len(books)
     all_genres = sorted({genre for book in books for genre in book["Genres"]})
