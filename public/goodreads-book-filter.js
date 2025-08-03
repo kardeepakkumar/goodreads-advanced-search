@@ -17,14 +17,21 @@ class ThemeManager {
   }
 
   init() {
+    // Apply theme immediately
     this.applyTheme(this.currentTheme);
-    this.setupToggleButton();
+    // Setup toggle button when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.setupToggleButton());
+    } else {
+      this.setupToggleButton();
+    }
   }
 
   applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
     this.currentTheme = theme;
+    console.log('Theme applied:', theme);
   }
 
   toggle() {
@@ -35,7 +42,13 @@ class ThemeManager {
   setupToggleButton() {
     const toggleBtn = document.getElementById('theme-toggle');
     if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => this.toggle());
+      toggleBtn.addEventListener('click', () => {
+        console.log('Theme toggle clicked');
+        this.toggle();
+      });
+      console.log('Theme toggle button setup complete');
+    } else {
+      console.error('Theme toggle button not found');
     }
   }
 }
@@ -163,37 +176,67 @@ class FilterExpressionUI {
   }
 
   setupEventListeners() {
+    console.log('Setting up filter UI event listeners');
+    
     // Add filter button
-    document.getElementById('add-filter-btn').addEventListener('click', () => {
-      this.addGenreFilter();
-    });
+    const addBtn = document.getElementById('add-filter-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        console.log('Add filter button clicked');
+        this.addGenreFilter();
+      });
+    } else {
+      console.error('Add filter button not found');
+    }
 
     // Logic operator buttons
-    document.querySelectorAll('.logic-btn').forEach(btn => {
+    const logicBtns = document.querySelectorAll('.logic-btn');
+    console.log('Found logic buttons:', logicBtns.length);
+    logicBtns.forEach(btn => {
       btn.addEventListener('click', () => {
+        console.log('Logic button clicked:', btn.dataset.operator);
         this.addOperator(btn.dataset.operator);
       });
     });
 
     // Clear filters button
-    document.getElementById('clear-filters-btn').addEventListener('click', () => {
-      this.clearFilters();
-    });
+    const clearBtn = document.getElementById('clear-filters-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        console.log('Clear filters button clicked');
+        this.clearFilters();
+      });
+    }
 
     // Apply filters button
-    document.getElementById('apply-filters-btn').addEventListener('click', () => {
-      this.applyFilters();
-    });
+    const applyBtn = document.getElementById('apply-filters-btn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', () => {
+        console.log('Apply filters button clicked');
+        this.applyFilters();
+      });
+    }
   }
 
   addGenreFilter() {
     const dropdown = document.getElementById('genre-dropdown');
-    const selectedGenre = dropdown.value;
+    if (!dropdown) {
+      console.error('Genre dropdown not found when trying to add filter');
+      return;
+    }
     
-    if (selectedGenre && !this.expression.includes(selectedGenre)) {
+    const selectedGenre = dropdown.value;
+    console.log('Selected genre:', selectedGenre);
+    
+    if (selectedGenre && selectedGenre.trim() !== '' && !this.expression.includes(selectedGenre)) {
       this.expression.push(selectedGenre);
       dropdown.value = ''; // Reset dropdown
       this.updateExpressionDisplay();
+      console.log('Genre added to expression:', this.expression);
+    } else if (!selectedGenre || selectedGenre.trim() === '') {
+      console.log('No genre selected');
+    } else {
+      console.log('Genre already in expression');
     }
   }
 
@@ -252,25 +295,56 @@ class FilterExpressionUI {
 // Data Loading and Initialization
 async function loadBooksData() {
   try {
+    console.log('Attempting to fetch goodreads-books-data.json...');
     const response = await fetch('goodreads-books-data.json');
+    console.log('Fetch response status:', response.status, response.statusText);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    console.log('JSON data loaded, type:', typeof data, 'length:', Array.isArray(data) ? data.length : 'not array');
+    
+    if (!Array.isArray(data)) {
+      console.error('Data is not an array:', data);
+      return [];
+    }
+    
+    // Validate data structure
+    if (data.length > 0) {
+      const sample = data[0];
+      console.log('Sample book data:', sample);
+      if (!sample.Title || !sample.Author || !sample.Genres) {
+        console.warn('Book data may be missing required fields');
+      }
+    }
+    
+    return data;
   } catch (error) {
     console.error('Error loading books data:', error);
+    console.error('Make sure goodreads-books-data.json exists and is valid JSON');
     return [];
   }
 }
 
 function populateGenreDropdown() {
+  console.log('Populating genre dropdown with', allBooks.length, 'books');
   const genresSet = new Set();
   allBooks.forEach(book => {
-    book.Genres.forEach(genre => genresSet.add(genre));
+    if (book.Genres && Array.isArray(book.Genres)) {
+      book.Genres.forEach(genre => genresSet.add(genre));
+    }
   });
   
   availableGenres = Array.from(genresSet).sort();
+  console.log('Found', availableGenres.length, 'unique genres');
+  
   const dropdown = document.getElementById('genre-dropdown');
+  if (!dropdown) {
+    console.error('Genre dropdown not found');
+    return;
+  }
   
   // Clear existing options except the first one
   dropdown.innerHTML = '<option value="">Select a genre...</option>';
@@ -281,6 +355,8 @@ function populateGenreDropdown() {
     option.textContent = genre;
     dropdown.appendChild(option);
   });
+  
+  console.log('Genre dropdown populated successfully');
 }
 
 // Filter Application Logic
@@ -432,45 +508,74 @@ let filterUI;
 
 // Application Initialization
 async function initializeApp() {
+  console.log('Initializing application...');
+  
   try {
-    // Initialize theme management
-    themeManager = new ThemeManager();
+    // Theme manager is already initialized globally
+    console.log('Theme manager already initialized');
     
     // Load books data
+    console.log('Loading books data...');
     allBooks = await loadBooksData();
+    console.log('Books loaded:', allBooks.length);
     
     if (allBooks.length === 0) {
-      document.getElementById('book-list').innerHTML = 
-        '<tr><td colspan="5" style="text-align: center; padding: 40px;">No books data available. Please check the data file.</td></tr>';
+      console.error('No books data loaded');
+      const bookList = document.getElementById('book-list');
+      if (bookList) {
+        bookList.innerHTML = 
+          '<tr><td colspan="5" style="text-align: center; padding: 40px;">No books data available. Please check the data file.</td></tr>';
+      }
       return;
     }
     
     // Initialize UI components
+    console.log('Initializing UI components...');
     populateGenreDropdown();
     filterUI = new FilterExpressionUI();
+    console.log('UI components initialized');
     
-    // Initial render
+    // Initial render with empty filter (show all books)
+    console.log('Applying initial filters...');
+    filterExpression = []; // Ensure empty filter initially
     applyBookFilters();
     
-    console.log(`Loaded ${allBooks.length} books with ${availableGenres.length} unique genres`);
+    console.log(`Application initialized successfully: ${allBooks.length} books with ${availableGenres.length} unique genres`);
     
   } catch (error) {
     console.error('Failed to initialize app:', error);
-    document.getElementById('book-list').innerHTML = 
-      '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--accent-danger);">Failed to load application. Please refresh the page.</td></tr>';
+    const bookList = document.getElementById('book-list');
+    if (bookList) {
+      bookList.innerHTML = 
+        '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--accent-danger);">Failed to load application. Please refresh the page.</td></tr>';
+    }
   }
 }
 
+// Apply theme immediately to avoid flash
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+console.log('Initial theme applied:', savedTheme);
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM Content Loaded - starting app initialization');
+  
+  // Initialize theme manager now that DOM is ready
+  themeManager = new ThemeManager();
+  
   initializeApp();
   
   // Additional event listeners for rating filter
-  document.getElementById('min-ratings').addEventListener('input', () => {
-    // Debounce the filter application
-    clearTimeout(window.ratingFilterTimeout);
-    window.ratingFilterTimeout = setTimeout(() => {
-      applyBookFilters();
-    }, 300);
-  });
+  const minRatingsInput = document.getElementById('min-ratings');
+  if (minRatingsInput) {
+    minRatingsInput.addEventListener('input', () => {
+      // Debounce the filter application
+      clearTimeout(window.ratingFilterTimeout);
+      window.ratingFilterTimeout = setTimeout(() => {
+        console.log('Rating filter changed');
+        applyBookFilters();
+      }, 300);
+    });
+  }
 });

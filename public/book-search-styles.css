@@ -391,6 +391,32 @@ body {
   text-decoration: underline;
 }
 
+/* Genre Tags */
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.genre-tag {
+  background: var(--accent-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Rating Badge */
+.rating-badge {
+  background: var(--accent-success);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 /* Pagination */
 .pagination-nav {
   margin-top: 30px;
