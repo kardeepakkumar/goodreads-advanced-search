@@ -1,0 +1,35 @@
+{
+  "name": "books_search_v1",
+  "database": "goodreadsBooks",
+  "collectionName": "books",
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "title": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "author": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "genres": {
+        "type": "string",
+        "analyzer": "lucene.keyword"
+      },
+      "genresAutocomplete": {
+        "type": "autocomplete",
+        "tokenization": "edgeGram",
+        "minGrams": 1,
+        "maxGrams": 20,
+        "foldDiacritics": true
+      },
+      "avgRating": {
+        "type": "number"
+      },
+      "numRatings": {
+        "type": "number"
+      }
+    }
+  }
+}

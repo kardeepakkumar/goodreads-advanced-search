@@ -1,0 +1,30 @@
+# --- Secrets & credentials ---
+.env.local
+.env.*.local
+cookie.txt
+
+# --- Raw source data (source of truth, not committed) ---
+books_raw.jl
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+build/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- TypeScript build cache ---
+tsconfig.tsbuildinfo
+
+# --- Misc ---
+*.log
+*.tmp
