@@ -1,6 +1,6 @@
 # Goodreads Advanced Search
 
-**Live:** _coming soon_
+**Live:** [Vercel App](https://goodreads-advanced-search.vercel.app/)
 
 A genre-first book discovery tool built on top of Goodreads data. Find your next read by combining genres, filtering by rating, and searching by title or author — then jump straight to the Goodreads page for the full details.
 
