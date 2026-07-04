@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+    <div className="min-h-screen bg-zinc-900 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-xl font-semibold text-zinc-100 mb-6 text-center">Admin Login</h1>
         <form onSubmit={handleSubmit} className="bg-zinc-800 rounded-lg p-6 space-y-4 border border-zinc-700">

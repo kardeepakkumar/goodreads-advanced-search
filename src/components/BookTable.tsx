@@ -19,6 +19,8 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
+// One semantic table at every size: real columns from md up, and each row
+// restyled into a self-contained card below md (thead hidden, cells stacked).
 export default function BookTable({ books, loading }: Props) {
   if (loading) {
     return (
@@ -52,9 +54,9 @@ export default function BookTable({ books, loading }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
+    <div className="md:overflow-x-auto">
+      <table className="w-full text-sm max-md:block">
+        <thead className="max-md:hidden">
           <tr className="text-xs uppercase tracking-wider" style={{ borderBottom: '1px solid var(--border-sub)', color: 'var(--text-muted)' }}>
             <th className="text-left py-2 pr-4 font-medium">Title</th>
             <th className="text-left py-2 pr-4 font-medium">Author</th>
@@ -63,37 +65,39 @@ export default function BookTable({ books, loading }: Props) {
             <th className="text-left py-2 font-medium">Genres</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="max-md:block max-md:space-y-2.5">
           {books.map((book) => (
             <tr
               key={book.goodreadsUrl}
-              className="transition-colors hover:bg-[var(--bg-surface)]"
-              style={{ borderBottom: '1px solid var(--border)' }}
+              className="transition-colors md:hover:bg-[var(--bg-surface)] md:border-b md:border-[color:var(--border)] max-md:block max-md:rounded-lg max-md:border max-md:border-[color:var(--border-sub)] max-md:bg-[color:var(--bg-surface)] max-md:p-3"
             >
-              <td className="py-2.5 pr-4 max-w-[260px]">
+              <td className="py-2.5 pr-4 max-w-[260px] max-md:block max-md:p-0 max-md:max-w-none">
                 <a
                   href={book.goodreadsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:underline transition-colors line-clamp-2"
+                  className="hover:underline transition-colors line-clamp-2 max-md:text-base max-md:font-medium"
                   style={{ color: '#60a5fa' }}
                 >
                   {book.title}
                 </a>
               </td>
-              <td className="py-2.5 pr-4 whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+              <td className="py-2.5 pr-4 whitespace-nowrap max-md:block max-md:p-0 max-md:pt-0.5 max-md:whitespace-normal" style={{ color: 'var(--text-muted)' }}>
                 {book.author}
               </td>
-              <td className="py-2.5 pr-4 text-right whitespace-nowrap">
-                <div className="flex flex-col items-end gap-0.5">
+              <td className="py-2.5 pr-4 text-right whitespace-nowrap max-md:inline-block max-md:p-0 max-md:pt-1.5 max-md:text-left">
+                <div className="flex flex-col items-end gap-0.5 max-md:flex-row max-md:items-baseline max-md:gap-1.5">
                   <StarRating rating={book.avgRating} />
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{book.avgRating.toFixed(2)}</span>
                 </div>
               </td>
-              <td className="py-2.5 pr-4 text-right whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+              <td
+                className="py-2.5 pr-4 text-right whitespace-nowrap max-md:inline-block max-md:p-0 max-md:pt-1.5 max-md:pl-2 max-md:text-left max-md:text-xs max-md:after:content-['_ratings']"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 {book.numRatings.toLocaleString('en-US')}
               </td>
-              <td className="py-2.5 max-w-[200px]">
+              <td className="py-2.5 max-w-[200px] max-md:block max-md:p-0 max-md:pt-2 max-md:max-w-none">
                 <div className="flex flex-wrap gap-1">
                   {book.genres.slice(0, 5).map((g) => (
                     <span

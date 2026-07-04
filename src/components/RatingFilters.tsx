@@ -16,7 +16,7 @@ function PresetButton({
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${active ? 'bg-blue-600 text-white' : ''}`}
+      className={`px-2.5 py-1.5 md:py-1 rounded text-xs font-medium transition-colors ${active ? 'bg-blue-600 text-white' : ''}`}
       style={active ? {} : { background: 'var(--bg-element)', color: 'var(--text-2)', border: '1px solid var(--border-sub)' }}
     >
       {children}
@@ -24,9 +24,11 @@ function PresetButton({
   )
 }
 
+// Groups stack on phones and flow into one row on wider screens. Each group
+// keeps its label and controls inside a single container.
 export default function RatingFilters({ filters, onChange }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start md:gap-x-8">
       <div>
         <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           Min avg rating
@@ -53,7 +55,7 @@ export default function RatingFilters({ filters, onChange }: Props) {
         </div>
       </div>
 
-      <div>
+      <div className="w-full sm:w-auto sm:min-w-[220px]">
         <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           Sort by
         </label>
@@ -61,7 +63,7 @@ export default function RatingFilters({ filters, onChange }: Props) {
           <select
             value={filters.sortBy}
             onChange={(e) => onChange({ sortBy: e.target.value as FilterState['sortBy'] })}
-            className="flex-1 rounded px-2 py-1.5 text-sm focus:outline-none"
+            className="flex-1 rounded px-2 py-2 md:py-1.5 text-sm focus:outline-none"
             style={{ background: 'var(--bg-element)', color: 'var(--text)', border: '1px solid var(--border-sub)' }}
           >
             <option value="avgRating">Avg rating</option>
@@ -71,7 +73,7 @@ export default function RatingFilters({ filters, onChange }: Props) {
           </select>
           <button
             onClick={() => onChange({ sortDir: filters.sortDir === 'desc' ? 'asc' : 'desc' })}
-            className="px-2.5 py-1.5 rounded text-sm"
+            className="px-3 md:px-2.5 py-2 md:py-1.5 rounded text-sm"
             style={{ background: 'var(--bg-element)', color: 'var(--text-2)', border: '1px solid var(--border-sub)' }}
             title="Toggle sort direction"
           >

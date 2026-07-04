@@ -22,10 +22,11 @@ export default function Pagination({ page, total, pageSize, onChange }: Props) {
     pages.push(totalPages)
   }
 
-  const navBtn = 'px-2.5 py-1.5 rounded text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+  const navBtn =
+    'min-w-[36px] px-2.5 py-2 sm:py-1.5 rounded text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
 
   return (
-    <div className="flex items-center gap-1 justify-center pt-4">
+    <div className="flex items-center flex-wrap gap-1 justify-center pt-3 sm:pt-4">
       <button
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
@@ -59,7 +60,7 @@ export default function Pagination({ page, total, pageSize, onChange }: Props) {
         ›
       </button>
 
-      <span className="ml-3 text-xs" style={{ color: 'var(--text-faint)' }}>
+      <span className="ml-3 text-xs whitespace-nowrap" style={{ color: 'var(--text-faint)' }}>
         {total.toLocaleString('en-US')} books
       </span>
     </div>

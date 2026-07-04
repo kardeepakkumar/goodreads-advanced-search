@@ -92,7 +92,7 @@ export default function GenrePanel({ allGenres, facets, filters, onChange }: Pro
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Genres</span>
         {activeCount > 0 && (
-          <button onClick={clearAll} className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={clearAll} className="text-xs px-2 py-1.5 -mr-2 -my-1.5 rounded" style={{ color: 'var(--text-muted)' }}>
             Clear ({activeCount})
           </button>
         )}
@@ -103,7 +103,7 @@ export default function GenrePanel({ allGenres, facets, filters, onChange }: Pro
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Filter genres…"
-        className="mb-2 w-full rounded px-2.5 py-1.5 text-xs focus:outline-none"
+        className="mb-2 w-full rounded px-2.5 py-2 lg:py-1.5 text-xs focus:outline-none"
         style={{ background: 'var(--bg-surface)', color: 'var(--text)', border: '1px solid var(--border-sub)' }}
       />
 
@@ -126,7 +126,7 @@ export default function GenrePanel({ allGenres, facets, filters, onChange }: Pro
               <button
                 onClick={(e) => setInclude(genre, e)}
                 title="Include"
-                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-l"
+                className="shrink-0 w-8 h-8 lg:w-6 lg:h-6 flex items-center justify-center rounded-l"
                 style={{ color: state === 'include' ? '#3b82f6' : 'var(--text-faint)' }}
               >
                 {state === 'include' ? (
@@ -143,7 +143,7 @@ export default function GenrePanel({ allGenres, facets, filters, onChange }: Pro
 
               {/* Label */}
               <span
-                className="flex-1 truncate py-1.5"
+                className="flex-1 truncate py-2 lg:py-1.5"
                 style={{
                   color: state === 'include' ? '#3b82f6' : state === 'exclude' ? '#ef4444' : 'var(--text-2)',
                   textDecoration: state === 'exclude' ? 'line-through' : 'none',
@@ -163,7 +163,7 @@ export default function GenrePanel({ allGenres, facets, filters, onChange }: Pro
               <button
                 onClick={(e) => setExclude(genre, e)}
                 title="Exclude"
-                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-r"
+                className="shrink-0 w-8 h-8 lg:w-6 lg:h-6 flex items-center justify-center rounded-r"
                 style={{ color: state === 'exclude' ? '#ef4444' : 'var(--text-faint)' }}
               >
                 <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

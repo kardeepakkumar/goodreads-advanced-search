@@ -40,3 +40,16 @@ input::placeholder, textarea::placeholder {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bg-element); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-sub); }
+
+@layer utilities {
+  /* Full-height app frame; dvh tracks mobile browser chrome, vh is the fallback */
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Keeps bottom-anchored controls above the iOS home indicator */
+  .pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}

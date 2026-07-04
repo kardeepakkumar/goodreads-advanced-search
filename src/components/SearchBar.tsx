@@ -26,7 +26,7 @@ export default function SearchBar({ value, onChange }: Props) {
         value={value}
         onChange={handleChange}
         placeholder="Search title or author…"
-        className="w-full rounded pl-9 pr-3 py-2 text-sm focus:outline-none"
+        className="w-full rounded pl-9 pr-9 py-2.5 md:py-2 text-sm focus:outline-none"
         style={{
           background: 'var(--bg-surface)',
           color: 'var(--text)',
@@ -36,7 +36,7 @@ export default function SearchBar({ value, onChange }: Props) {
       {value && (
         <button
           onClick={() => onChange('')}
-          className="absolute right-2 top-1/2 -translate-y-1/2"
+          className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded"
           style={{ color: 'var(--text-faint)' }}
           aria-label="Clear search"
         >

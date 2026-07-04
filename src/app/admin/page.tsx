@@ -142,20 +142,20 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
-      <header className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between">
-        <h1 className="text-base font-semibold">Admin Panel</h1>
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-xs text-zinc-400 hover:text-zinc-200">← Discovery</a>
-          <button onClick={logout} className="text-xs text-zinc-400 hover:text-zinc-200">Log out</button>
+      <header className="border-b border-zinc-800 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <h1 className="text-base font-semibold truncate">Admin Panel</h1>
+        <div className="flex items-center gap-1 shrink-0">
+          <a href="/" className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-2 rounded">← Discovery</a>
+          <button onClick={logout} className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-2 rounded">Log out</button>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10 pb-safe">
 
         {/* ── Config ─────────────────────────────────────────────────────── */}
         <section>
           <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">Config</h2>
-          <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-5 space-y-4">
+          <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4 sm:p-5 space-y-4">
             <div>
               <label className="block text-xs text-zinc-400 mb-1">Goodreads Cookie</label>
               <textarea
@@ -170,7 +170,7 @@ export default function AdminPage() {
               <button
                 onClick={saveConfig}
                 disabled={configSaving}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-medium transition-colors"
+                className="px-4 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-medium transition-colors"
               >
                 {configSaving ? 'Saving…' : 'Save'}
               </button>
@@ -182,16 +182,16 @@ export default function AdminPage() {
         {/* ── Queue Job ──────────────────────────────────────────────────── */}
         <section>
           <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">Queue Job</h2>
-          <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-5">
-            <div className="flex flex-wrap gap-3 items-end">
-              <div>
+          <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4 sm:p-5">
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+              <div className="col-span-2 sm:col-auto">
                 <label className="block text-xs text-zinc-400 mb-1">Genre slug</label>
                 <input
                   type="text"
                   value={newGenre}
                   onChange={(e) => setNewGenre(e.target.value)}
                   placeholder="e.g. fantasy"
-                  className="w-48 bg-zinc-900 border border-zinc-600 rounded px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
+                  className="w-full sm:w-48 bg-zinc-900 border border-zinc-600 rounded px-3 py-2 sm:py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
                   onKeyDown={(e) => e.key === 'Enter' && queueJob()}
                 />
               </div>
@@ -202,7 +202,7 @@ export default function AdminPage() {
                   value={newStartPage}
                   onChange={(e) => setNewStartPage(parseInt(e.target.value, 10))}
                   min={1}
-                  className="w-20 bg-zinc-900 border border-zinc-600 rounded px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
+                  className="w-full sm:w-20 bg-zinc-900 border border-zinc-600 rounded px-3 py-2 sm:py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
                 />
               </div>
               <div>
@@ -212,12 +212,12 @@ export default function AdminPage() {
                   value={newMaxPage}
                   onChange={(e) => setNewMaxPage(parseInt(e.target.value, 10))}
                   min={1}
-                  className="w-20 bg-zinc-900 border border-zinc-600 rounded px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
+                  className="w-full sm:w-20 bg-zinc-900 border border-zinc-600 rounded px-3 py-2 sm:py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
                 />
               </div>
               <button
                 onClick={queueJob}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
+                className="col-span-2 sm:col-auto px-4 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
               >
                 Queue
               </button>
@@ -245,8 +245,8 @@ export default function AdminPage() {
             {jobs.length === 0 ? (
               <p className="text-xs text-zinc-500 p-5">No jobs yet.</p>
             ) : (
-              <div className="overflow-y-auto max-h-[420px]">
-                <table className="w-full text-sm">
+              <div className="overflow-y-auto overflow-x-auto max-h-[420px]">
+                <table className="w-full text-sm min-w-[600px]">
                   <thead className="sticky top-0 bg-zinc-800">
                     <tr className="border-b border-zinc-700 text-xs text-zinc-400 uppercase tracking-wider">
                       <th className="text-left px-4 py-2.5 font-medium">Genre</th>
@@ -266,7 +266,7 @@ export default function AdminPage() {
                         <td className="px-4 py-2.5 text-right text-zinc-400 text-xs">{job.currentPage}</td>
                         <td className="px-4 py-2.5 text-right text-zinc-400 text-xs">{job.pagesScraped}</td>
                         <td className="px-4 py-2.5 text-right text-zinc-400 text-xs">{job.maxPage}</td>
-                        <td className="px-4 py-2.5 text-xs text-zinc-500">
+                        <td className="px-4 py-2.5 text-xs text-zinc-500 whitespace-nowrap">
                           {new Date(job.createdAt).toLocaleString('en-US')}
                         </td>
                         <td className="px-4 py-2.5 text-xs text-red-400 max-w-[200px] truncate" title={job.error ?? ''}>
