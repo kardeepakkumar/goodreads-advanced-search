@@ -2,7 +2,9 @@
 
 ## Overview
 
-Vercel deploys automatically from GitHub — no GitHub Actions needed. Every push to `main` triggers a production deployment. You set environment variables once in the Vercel dashboard and they're injected at build and runtime.
+Vercel deploys automatically from GitHub — every push to `main` triggers a production deployment. You set environment variables once in the Vercel dashboard and they're injected at build and runtime.
+
+Separately from deployment, a GitHub Actions workflow (`.github/workflows/tests.yml`) runs the test suite on every push to `main`. Vercel does not wait on it — it's an independent signal.
 
 ---
 
@@ -12,8 +14,8 @@ Before deploying, make sure you have:
 
 1. A **Vercel account** (free tier is fine)
 2. A **MongoDB Atlas** cluster with:
-   - The `goodreadsBooks` database and collections created (run `migration/setup/` scripts)
-   - Atlas Search index created (`migration/search/`)
+   - The `goodreadsBooks` database, collections, and indexes created (see `docs/mongo-setup.md`)
+   - Atlas Search index created (`docs/mongo-setup.md` section 4)
    - Network access set to allow all IPs: `0.0.0.0/0` — Vercel uses dynamic IPs, you cannot allowlist them
 3. The app working locally (`npm run dev`)
 
@@ -107,14 +109,16 @@ The scraper runs automatically in the background via the Next.js instrumentation
 
 After setup, every push to `main` automatically triggers a new Vercel deployment. Environment variables persist across deployments — you only set them once.
 
-No GitHub Actions are needed for basic deployment. If you want to add tests or lint checks before deploy, you can add a GitHub Actions workflow that Vercel waits on, but it's optional.
+The repo's `tests` workflow runs the full Vitest suite on the same push. Deployment does not wait on it — check the Actions tab (or the README badge) for the result.
 
 ---
 
 ## MongoDB Atlas checklist
 
-- [ ] Collections created via `migration/setup/02-create-collections.js`
-- [ ] Indexes created via `migration/setup/03-create-indexes.js`
-- [ ] `appConfig` seeded via `migration/setup/04-seed-appconfig.js`
-- [ ] Atlas Search index created (`migration/search/09-create-search-index.sh`)
+All of these are covered step-by-step in `docs/mongo-setup.md`:
+
+- [ ] Collections created with strict validators (section 2)
+- [ ] Indexes created (section 3)
+- [ ] `appConfig` singleton seeded (section 2.5)
+- [ ] Atlas Search index created and `READY` (section 4)
 - [ ] Database user has `readWrite` on `goodreadsBooks`

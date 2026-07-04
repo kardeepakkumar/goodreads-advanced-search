@@ -36,11 +36,21 @@
 
 ## Search
 
-* **Primary approach**: MongoDB Atlas Search
+* **Two-path**: Atlas Search when a text query is present; plain MongoDB aggregation otherwise
 * Full-text search over title and author (lucene.standard analyzer, fuzzy matching)
 * Wildcard prefix matching to catch substrings (e.g. "murder" → "murderbot")
-* Genre facets via Atlas Search `$facet` stage
-* Falls back to plain MongoDB aggregation when no text query is present
+* Genre facet counts always come from a regular aggregation (`$unwind` → `$group`)
+* Genre merges (`genreAliases`) resolve at query time: filters expand to raw source tags, facets and results map to canonical names with per-book dedup
+
+---
+
+## Testing & CI
+
+* **Framework**: Vitest + Testing Library (jsdom for components, node for lib/API routes)
+* Run with `npm test` (or `npm run test:watch`)
+* Tests pin behavior contracts — API URLs and payloads, session token flow, polling cadence, genre include/exclude semantics, scraper parsing and BSON write shapes — using accessible queries, so UI restyling must not break them
+* With zero `genreAliases` docs the query builders emit pipelines byte-identical to the pre-merge shapes; tests rely on this
+* **CI**: GitHub Actions (`.github/workflows/tests.yml`) runs the full suite on every push to `main`
 
 ---
 

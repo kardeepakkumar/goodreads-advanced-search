@@ -5,6 +5,7 @@
 * Route: `/admin`
 * Username + password authentication (credentials set via env vars)
 * Session managed with iron-session (encrypted cookie)
+* Responsive: sections stack and forms go full-width on phones; the jobs table scrolls horizontally
 
 ---
 
@@ -38,7 +39,34 @@ Add a genre to the scraping queue.
 
 ---
 
-## Section 3: Scraper Log
+## Section 3: Genre Merges
+
+Manual, deliberate genre normalization. Merges apply at query/display time only — raw tags on books are never rewritten, so every merge is fully reversible.
+
+### Merge form
+
+* **Merge genre** → **Into**: e.g. merge `science-fiction` into `sci-fi`
+* Both fields offer suggestions (datalists) from existing genres; free text is allowed — the target may be brand new and becomes a merged genre simply by being pointed at
+* Merging a genre that is itself a merge target moves its whole group to the new target
+* Merging **into** an already-merged-away genre is rejected (409) with a hint naming the real canonical — mappings stay flat, no chains
+
+### Merged genres list
+
+* One row per canonical: name, deduplicated book count, and the source tags merged into it (`sci-fi · 7 books ← science-fiction, scifi`)
+* A book tagged with several source tags of the same canonical counts **once**
+* **Split** deletes the group's alias mappings — every source tag returns to being an original genre, exactly as before the merge
+
+### Original genres list
+
+* Every raw tag (registered or found on books) with its book count
+* Merged-away tags show struck through with a `→ canonical` marker
+* A filter box narrows the list; clicking a row prefills the merge form
+
+Effect on the public page: the genre sidebar, facet counts, and book genre chips all show canonical names; filtering by a merged genre matches any of its source tags. See `genre-filtering-logic.md`.
+
+---
+
+## Section 4: Scraper Log
 
 * Shows the last 20 lines of scraper activity
 * Polled from the server every 3 seconds
@@ -47,7 +75,7 @@ Add a genre to the scraping queue.
 
 ---
 
-## Section 4: Recent Jobs
+## Section 5: Recent Jobs
 
 * Shows the last 20 jobs, sorted by creation time
 * Auto-refreshes every 4 seconds when a job is active, every 20 seconds when idle

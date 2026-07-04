@@ -54,6 +54,13 @@ Do not change this back to a raw hash in the env.
 - Timeouts revert job to `queued` (retry same page), not `failed`
 - Rate limit default: 10 seconds, stored in `appConfig.rateLimitMs` in MongoDB (not an env var)
 
+## Testing
+
+- `npm test` (Vitest run) / `npm run test:watch`; CI runs the suite on every push to `main` (`.github/workflows/tests.yml`)
+- Tests pin **behavior contracts** — API URLs/payloads, session token flow, polling cadence (jobs 4s/20s, logs 3s, search debounce 400ms), include/exclude semantics, scraper BSON write shapes — via accessible queries (placeholders, titles, roles, labels). UI restyling must keep them green **without edits**
+- Component tests live in `tests/components` (jsdom via docblock), lib/API tests in `tests/unit` and `tests/api` (node). `tests/helpers/` has the mocked Mongo driver surface, a real iron-session login helper, and Goodreads shelf HTML fixtures
+- With zero `genreAliases` docs the query builders emit pipelines **byte-identical** to the pre-merge shapes; the legacy-shape tests depend on this — keep the identity-when-empty property when touching `lib/search.ts` or `/api/books`
+
 ## File structure
 
 ```
@@ -63,34 +70,43 @@ src/
     admin/page.tsx            # Admin dashboard (auth required)
     api/
       books/                  # Main search endpoint
-      genres/                 # Genre list for the sidebar
+      genres/                 # Genre list for the sidebar (merge-aware)
       admin/
         config/               # Cookie + rate limit config
         jobs/                 # Scrape job queue
+        aliases/              # Genre merges: overview / merge / split
         tick/                 # Single tick (used by background loop)
         logs/                 # In-memory scraper log buffer
         auth/login|logout/    # Admin session management
   components/
-    DiscoveryPage.tsx         # Top-level discovery UI orchestrator
+    DiscoveryPage.tsx         # Top-level discovery UI orchestrator (+ mobile drawer/disclosure state)
     GenrePanel.tsx            # Steam-style genre filter sidebar
-    BookTable.tsx             # Results table
+    BookTable.tsx             # Results: table on md+, cards below (CSS-only)
     SearchBar, RatingFilters, Pagination
   lib/
     mongodb.ts                # Singleton connection
     scraper.ts                # cheerio HTML parsing + bulkWrite
     ticker.ts                 # Core tick logic (shared)
     autoTicker.ts             # Background loop + log buffer
-    search.ts                 # Atlas Search query builder
+    search.ts                 # Query builders (alias-aware, identity when no aliases)
+    aliases.ts                # Genre merge map + resolution helpers + pipeline exprs
     auth.ts                   # iron-session config
   instrumentation.ts          # Starts background ticker on server boot
   types/index.ts              # All shared TypeScript types
+tests/                        # Vitest suite (unit / api / components / helpers)
+vitest.config.ts
+.github/workflows/tests.yml   # CI: full suite on push to main
 ```
 
 ## Docs
 
 Full architecture docs are in `docs/`. Key files:
-- `docs/tech-stack.md` — decisions and rationale
+- `docs/tech-stack.md` — decisions and rationale, testing & CI
+- `docs/product-spec.md` — vision, goals, invariants
+- `docs/data-model.md` — collection shapes and field rules (incl. genreAliases)
+- `docs/mongo-setup.md` — source of truth for recreating the DB: validators, indexes, Atlas Search index
 - `docs/scraping-architecture.md` — scraper lifecycle, resilience
-- `docs/admin-panel.md` — what each admin section does
+- `docs/admin-panel.md` — what each admin section does (incl. Genre Merges)
+- `docs/main-page-ui.md` — discovery page layout across desktop/tablet/phone
+- `docs/genre-filtering-logic.md` — tag filtering semantics, merged-genre behavior
 - `docs/vercel-setup.md` — deployment walkthrough
-- `docs/mongo-setup.md` — collection schemas, indexes, Atlas Search index

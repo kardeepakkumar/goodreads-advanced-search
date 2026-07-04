@@ -99,22 +99,24 @@ Canonical set of all known genre slugs. Populated from scrape jobs and the initi
 
 ## genreAliases Collection
 
-Explicit merge mappings: source slug → canonical slug. Used during ingestion to normalize known variants.
+Explicit merge mappings: source slug → canonical slug. Managed from the admin panel's **Genre Merges** section (merge/split) and applied at **query/display time only** — never during ingestion.
 
 ```json
 {
-  "_id": "non fiction",
-  "canonical": "non-fiction",
+  "_id": "science-fiction",
+  "canonical": "sci-fi",
   "schemaVersion": 1,
   "createdAt": "2025-12-22T00:00:00.000Z",
   "updatedAt": "2025-12-22T00:00:00.000Z"
 }
 ```
 
-* `_id` is the **source alias slug** (string) — the raw value being mapped away
-* `canonical` is the target slug that must exist in the `genres` collection
-* Only explicit admin-defined aliases exist here — no automatic normalization
-* All book ingestion and filtering resolves genres through this mapping before writing
+* `_id` is the **source alias slug** (string) — the raw tag being merged away
+* `canonical` is the display/filter target; it does **not** need to exist in the `genres` collection (a brand-new target becomes a merged genre by being pointed at)
+* Mappings are flat — an alias can never itself be a merge target (the API rejects chain-creating merges with 409)
+* Only explicit admin-defined merges exist here — no automatic normalization
+* Raw `genres` arrays on books and the `genres` collection are **never rewritten**; splitting (deleting the alias docs for a canonical) restores the original tags exactly
+* Resolution happens in `src/lib/aliases.ts`: `/api/books` expands filters to raw sources and maps facet/result genres to canonicals (deduped per book via `$setUnion`), `/api/genres` lists canonical names
 
 ---
 
@@ -143,8 +145,8 @@ Tracks the admin scraping queue and per-job progress.
 
 ### Field Notes
 
-* `genre` — the resolved canonical genre slug used in the URL
-* `requestedGenre` — the raw string the admin typed (before alias resolution); optional
+* `genre` — the Goodreads shelf slug used in the URL, exactly as typed by the admin (genre merges do not apply to scraping — raw tags are always stored)
+* `requestedGenre` — mirrors the admin's input; optional
 * `startPage` — the page number the job began from (usually 1, but can differ on manual resume)
 * `currentPage` — the next page to be fetched
 * `maxPage` — hard cap (100); job stops here even if more pages exist
@@ -177,12 +179,13 @@ Stores global admin-managed runtime configuration. Single document.
 ```
 
 * `goodreadsCookie` — the session cookie string used for all scraping requests; set and refreshed via admin UI
-* `rateLimitMs` — minimum milliseconds between Goodreads requests; defaults to 3000; overrides `SCRAPER_RATE_LIMIT_MS` env var if set
+* `rateLimitMs` — minimum milliseconds between Goodreads requests; the app falls back to 10,000 when unset; not an environment variable
 
 ---
 
 ## Notes
 
-* Main page uses **Atlas Search for all filtering, sorting, and genre facet counts**, even when search text is empty
+* `/api/books` is two-path: **Atlas Search only when a text query is present**; genre/rating-only filtering uses a plain aggregation. Genre facet counts always come from a regular aggregation, never Atlas Search
+* Genre merges (`genreAliases`) are resolved at query/display time; stored data is always raw
 * Target dataset size: ~100MB, up to ~300k books
 * `genresAutocomplete` always mirrors `genres` exactly — they are kept in sync on every write

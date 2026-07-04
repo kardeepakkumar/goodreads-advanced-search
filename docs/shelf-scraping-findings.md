@@ -133,10 +133,10 @@ Pass as: `headers: { Cookie: cookieString }`
 
 ### Rate limiting
 
-Minimum **3 seconds between requests** (enforced by `rateLimitMs` in `appConfig`):
+Enforced by `rateLimitMs` in `appConfig` — the app defaults to **10 seconds between requests** when unset (3s was the research-phase floor):
 
 ```typescript
-await new Promise(resolve => setTimeout(resolve, 3000));
+await new Promise(resolve => setTimeout(resolve, 10000));
 ```
 
 ---
@@ -152,7 +152,7 @@ for page = 1..N:
     if new → insert with genre as firstSeenGenre
 
   stop if: 0 books | <50 books | duplicate page | page > 100
-  wait 3s before next request
+  wait rateLimitMs (default 10s) before next request
 ```
 
 ---

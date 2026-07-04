@@ -105,8 +105,8 @@ db.createCollection("genreAliases", {
       additionalProperties: false,
       required: ["_id", "canonical", "schemaVersion", "createdAt", "updatedAt"],
       properties: {
-        _id:          { bsonType: "string", minLength: 1 },  // the alias slug
-        canonical:    { bsonType: "string", minLength: 1 },  // target slug in genres collection
+        _id:          { bsonType: "string", minLength: 1 },  // the alias slug (raw tag merged away)
+        canonical:    { bsonType: "string", minLength: 1 },  // display/filter target; need not exist in genres
         schemaVersion:{ bsonType: "int", minimum: 1 },
         createdAt:    { bsonType: "date" },
         updatedAt:    { bsonType: "date" }
@@ -275,7 +275,10 @@ The index builds asynchronously. Status will show `BUILDING` initially, then `RE
 
 ## 5) Operational Notes
 
-* All user-facing filtering/sorting/faceting uses Atlas Search via `$search`, even when search text is empty
-* Genre facet counts are computed live per request via Atlas Search facets
+* `/api/books` is two-path: Atlas Search (`$search`) only when a text query is present; genre/rating-only filtering uses a plain aggregation
+* Genre facet counts are computed live per request via a regular aggregation (`$unwind` → `$group`), never Atlas Search
+* Genre merges (`genreAliases`, managed in the admin panel) are resolved at query/display time — stored documents always carry raw tags
 * All writes must set `schemaVersion`, `createdAt` (insert only), `updatedAt` (every write)
 * Use `$addToSet` for `genres` and `genresAutocomplete` — never overwrite the full array
+
+> This file is the source of truth for recreating the database from scratch (collections, validators, indexes, search index). The one-time `migration/` bootstrap scripts that originally executed it were removed after the migration completed.

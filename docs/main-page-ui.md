@@ -1,116 +1,67 @@
 # main-page-ui.md
 
-## Layout Overview
-
-* **Top bar**: Search input, dataset counters, reset button, theme toggle
-* **Left / main area**: Book results table
-* **Right panel**: Filters (ratings + genre tag panel)
+The public discovery page (`/`). One layout, responsive at three sizes: desktop (`lg+`), tablet (`md`–`lg`), and phone (below `md`). Dark theme only.
 
 ---
 
-## Top Bar
+## Desktop layout (`lg` and up)
 
-### Search Bar
+* **Left sidebar (fixed column)**: genre tag panel
+* **Toolbar (top of main area)**: search bar, with rating/sort controls in a row beneath it
+* **Stats bar**: matching count · total books shelved
+* **Results table**: title, author, rating, # ratings, genre chips
+* **Footer**: pagination
 
-* Text search across: book title, author
-* Behavior: case-insensitive, accent-insensitive, fuzzy matching
-* Empty by default
+## Tablet (`md`–`lg`)
 
-### Sorting Interaction
+Same as desktop except the genre panel becomes a **slide-over drawer**, opened via a "Genres" button in the toolbar. The button shows a badge with the active include/exclude count.
 
-* Default sort: `Avg Rating DESC`
-* When search text is present: default sort switches to `search_rank DESC`
-* User can override sort via column header clicks at any time
+## Phone (below `md`)
 
-### Result Counters
-
-* **Total books in dataset** — static count of all books
-* **Books matching current filters** — live count, updates with every filter change
-
-### Reset Button
-
-* Clears all active filters (genres, ratings, search text) back to defaults
+* Genre panel: slide-over drawer (as tablet)
+* Rating/sort controls: collapsed behind a **"Filters"** toolbar button (a dot marks non-default filters); the same controls, just disclosed
+* Results: each row renders as a **card** — title, author, stars + rating + ratings count, genre chips. Same data, same semantics, restyled with CSS only
+* Larger touch targets throughout; safe-area padding for the iOS home indicator; `dvh`-based viewport height
 
 ---
 
-## Right Panel: Filters
+## Search bar
 
-### Rating Filters
+* Text search across book title and author
+* Fuzzy matching (1 edit) plus wildcard prefix matching (`murder` → `murderbot`) via Atlas Search
+* Debounced 400ms — one request per pause in typing
+* Clear (×) button appears while text is present
 
-| Filter | Default Min | Default Max |
-|---|---|---|
-| Average Rating | 3.0 | 5.0 |
-| Number of Ratings | 1,000 | ∞ |
+## Rating / sort controls
 
-Each filter has:
-* A range slider
-* Numeric input fields for precision entry
+* **Min avg rating** presets: Any, ≥ 3, ≥ 3.5, ≥ 4, ≥ 4.25, ≥ 4.5
+* **Min ratings count** presets: Any, ≥ 1,000, ≥ 10,000, ≥ 100,000, ≥ 500,000
+* **Sort by**: Avg rating (default, desc), Num ratings, Title, Search rank — plus an asc/desc direction toggle
+* "Search rank" sorts by Atlas Search relevance when a text query is present; without one it falls back to avg rating
 
----
+## Genre tag panel
 
-### Genre Tag Panel
+Steam-style three-state tags — see `genre-filtering-logic.md` for the full semantics.
 
-Modelled after Steam's "Narrow by tag" panel.
+* Every genre row: include checkbox · name · book count (neutral rows only) · exclude minus
+* Active genres pin to the top **in the order they were selected**
+* A filter box narrows the list; active genres always stay visible
+* Counts reflect the current genre/rating filters (not the text query)
+* Merged genres appear under their canonical name only (see `data-model.md` → genreAliases)
 
-#### Structure
+## Stats bar
 
-The panel has two sections:
+* **Matching** — live count for the current filters
+* **Books shelved** — total dataset size
 
-**1. Active Filters (top, highlighted in blue)**
-* Contains all genres currently in included or excluded state
-* Included genres: checkbox checked + highlight
-* Excluded genres: minus (−) icon active + highlight, checkbox unchecked
-* These remain visible here until deactivated
-* Order: included genres first, then excluded genres
+## Results
 
-**2. Neutral Genres (below)**
-* Top 15–20 genres by descending book count under all current filters
-* Each row: `[ checkbox ]  Genre Name  count  [ − ]`
-* Count shown inline in a smaller/italic style
-* Genres already in the active section are not repeated here
-
-#### Interactions
-
-* **Click checkbox** → toggles genre between neutral and included
-* **Click minus (−)** → toggles genre between neutral and excluded
-* A genre cannot be both included and excluded
-
-#### Genre Search Bar
-
-* Located at the bottom of the genre panel
-* Autocomplete via Atlas Search prefix matching against the `genres` collection
-* Selecting a genre from autocomplete adds it to the include list
-* Allows activating any genre not currently visible in the top-N list
-
----
-
-## Results Table
-
-### Columns
-
-| Column | Sortable |
-|---|---|
-| Book Name (links to Goodreads) | Yes |
-| Author | Yes |
-| Avg Rating | Yes (default DESC) |
-| Num Ratings | Yes |
-
-### Sorting
-
-* Click any column header to sort ascending; click again for descending
-* Active sort column is visually indicated
-
----
+* 25 books per page
+* Title links to the Goodreads page (new tab)
+* Up to 5 genre chips per book, then a `+N` overflow marker; chips show merged (canonical) names
+* Loading spinner during fetches; explicit empty state when nothing matches
 
 ## Pagination
 
-* 20 books per page
-* Navigation: Previous / Next, First / Last, windowed page numbers (current ±2)
-
----
-
-## Theme
-
-* Default: dark mode
-* Toggle in top-right corner
-* Light mode available
+* Previous / next arrows plus windowed page numbers (current ±1, with ellipses, first and last always shown)
+* Changing any filter resets to page 1; changing pages preserves all filters

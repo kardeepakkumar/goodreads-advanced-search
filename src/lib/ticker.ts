@@ -1,4 +1,4 @@
-// Core tick logic — shared between /api/admin/tick and /api/cron/tick
+// Core tick logic — shared between /api/admin/tick and the background ticker
 
 import { Int32 } from 'mongodb'
 import { getDb } from './mongodb'
