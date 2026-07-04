@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/mongodb'
 import { buildSearchExpr, buildFacetMatch, SearchParams } from '@/lib/search'
+import { getAliasMap, hasAliases, canonicalGenresExpr } from '@/lib/aliases'
 import { BooksResponse } from '@/types'
 
 const PAGE_SIZE = 25
@@ -26,25 +27,52 @@ export async function GET(req: NextRequest) {
     const db = await getDb()
     const col = db.collection('books')
 
-    const facetMatch = buildFacetMatch(params)
+    // Merged-genre view: filters expand to raw sources, facets and result
+    // genres map to canonical names. With no aliases every pipeline below is
+    // exactly the legacy shape.
+    const aliasMap = await getAliasMap(db)
+    const aliased = hasAliases(aliasMap)
+
+    const facetMatch = buildFacetMatch(params, aliasMap)
     const facetMatchStages = Object.keys(facetMatch).length > 0 ? [{ $match: facetMatch }] : []
 
-    // Genre facet pipeline — always a regular aggregation
-    const facetPipeline = [
-      ...facetMatchStages,
-      { $unwind: '$genres' },
-      { $group: { _id: '$genres', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 500 },
-    ]
+    // Genre facet pipeline — always a regular aggregation. Under merges, a
+    // book's genres collapse to a canonical set first ($setUnion dedupes), so
+    // a book tagged with several sources of one canonical counts once.
+    const facetPipeline = aliased
+      ? [
+          ...facetMatchStages,
+          { $project: { canon: canonicalGenresExpr(aliasMap) } },
+          { $unwind: '$canon' },
+          { $group: { _id: '$canon', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 500 },
+        ]
+      : [
+          ...facetMatchStages,
+          { $unwind: '$genres' },
+          { $group: { _id: '$genres', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 500 },
+        ]
 
     const effectiveSortField = sortBy === 'searchRank' ? 'avgRating' : sortBy
+
+    const bookProjection = {
+      _id: 0,
+      goodreadsUrl: 1,
+      title: 1,
+      author: 1,
+      avgRating: 1,
+      numRatings: 1,
+      genres: aliased ? canonicalGenresExpr(aliasMap) : 1,
+    }
 
     let booksPipeline: object[]
 
     if (params.q) {
       // ── Text search path: Atlas Search ───────────────────────────────
-      const searchExpr = buildSearchExpr(params)
+      const searchExpr = buildSearchExpr(params, aliasMap)
       const textSortStage: Record<string, unknown> =
         sortBy === 'searchRank'
           ? { $sort: { _searchScore: -1, avgRating: -1 } }
@@ -59,7 +87,7 @@ export async function GET(req: NextRequest) {
             books: [
               { $skip: skip },
               { $limit: PAGE_SIZE },
-              { $project: { _id: 0, goodreadsUrl: 1, title: 1, author: 1, avgRating: 1, numRatings: 1, genres: 1 } },
+              { $project: bookProjection },
             ],
             total: [{ $count: 'count' }],
           },
@@ -75,7 +103,7 @@ export async function GET(req: NextRequest) {
             books: [
               { $skip: skip },
               { $limit: PAGE_SIZE },
-              { $project: { _id: 0, goodreadsUrl: 1, title: 1, author: 1, avgRating: 1, numRatings: 1, genres: 1 } },
+              { $project: bookProjection },
             ],
             total: [{ $count: 'count' }],
           },

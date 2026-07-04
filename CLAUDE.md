@@ -22,6 +22,8 @@ A genre-first book discovery app built on Goodreads shelf data. Users filter boo
 
 **Genre insertion order in UI**: `activeOrder` state in `GenrePanel.tsx` preserves the order genres were selected. Active genres are always shown at the top of the panel even when the search filter is active.
 
+**Genre merges are view-time only**: `genreAliases` docs (`_id` = source tag, `canonical` = target) are applied in `src/lib/aliases.ts` when building queries, facets, and result projections (`/api/books`, `/api/genres`, admin overview). Raw `genres` arrays on books are never rewritten — a merge is fully undone by deleting its alias docs (Split in the admin panel). Mappings stay flat: merging into an already-merged genre is rejected with 409. Facet/result genres dedupe per book via `$setUnion`, so a book tagged with several sources of one canonical counts once. With zero aliases every pipeline is byte-identical to the pre-alias shape — tests rely on this.
+
 ## MongoDB — critical gotchas
 
 All collections have `additionalProperties: false` strict validators. Any write must include **all required fields** with **correct BSON types** or it will fail with "Document failed validation".

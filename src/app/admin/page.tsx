@@ -8,6 +8,11 @@ interface JobsResponse {
   jobs: ScrapeJob[]
 }
 
+interface AliasOverview {
+  originals: { genre: string; count: number; mergedInto: string | null }[]
+  merges: { canonical: string; sources: string[]; count: number }[]
+}
+
 function StatusBadge({ status }: { status: ScrapeJob['status'] }) {
   const styles: Record<ScrapeJob['status'], string> = {
     queued: 'bg-zinc-700 text-zinc-300',
@@ -37,6 +42,12 @@ export default function AdminPage() {
   const [jobMsg, setJobMsg] = useState('')
 
   const [scraperLogs, setScraperLogs] = useState<string[]>([])
+
+  const [aliasData, setAliasData] = useState<AliasOverview | null>(null)
+  const [mergeFrom, setMergeFrom] = useState('')
+  const [mergeInto, setMergeInto] = useState('')
+  const [aliasMsg, setAliasMsg] = useState('')
+  const [genreFilter, setGenreFilter] = useState('')
 
   const [authState, setAuthState] = useState<'checking' | 'ok' | 'denied'>('checking')
 
@@ -70,10 +81,18 @@ export default function AdminPage() {
     setJobs(body.jobs.slice(0, 20))
   }, [])
 
+  const loadAliases = useCallback(async () => {
+    const res = await fetch('/api/admin/aliases')
+    if (!res.ok) return
+    const body: AliasOverview = await res.json()
+    setAliasData(body)
+  }, [])
+
   useEffect(() => {
     loadConfig()
     loadJobs()
-  }, [loadConfig, loadJobs])
+    loadAliases()
+  }, [loadConfig, loadJobs, loadAliases])
 
   // ── Auto-refresh jobs + logs while page is open ─────────────────────────────
   useEffect(() => {
@@ -129,6 +148,42 @@ export default function AdminPage() {
       loadJobs()
     } else {
       setJobMsg(body.error || 'Error queuing job')
+    }
+  }
+
+  // ── Genre merges ────────────────────────────────────────────────────────────
+  async function mergeGenres() {
+    const from = mergeFrom.trim()
+    const into = mergeInto.trim()
+    if (!from || !into) return
+    setAliasMsg('')
+    const res = await fetch('/api/admin/aliases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, into }),
+    })
+    const body = await res.json()
+    if (res.ok) {
+      setMergeFrom('')
+      setMergeInto('')
+      setAliasMsg(`Merged "${from}" into "${into}"`)
+      loadAliases()
+    } else {
+      setAliasMsg(body.error || 'Error merging genres')
+    }
+  }
+
+  async function splitGenre(canonical: string) {
+    setAliasMsg('')
+    const res = await fetch(`/api/admin/aliases?canonical=${encodeURIComponent(canonical)}`, {
+      method: 'DELETE',
+    })
+    const body = await res.json()
+    if (res.ok) {
+      setAliasMsg(`Split "${canonical}" — ${body.released} genre(s) restored`)
+      loadAliases()
+    } else {
+      setAliasMsg(body.error || 'Error splitting genre')
     }
   }
 
@@ -223,6 +278,128 @@ export default function AdminPage() {
               </button>
             </div>
             {jobMsg && <p className="mt-2 text-xs text-zinc-400">{jobMsg}</p>}
+          </div>
+        </section>
+
+        {/* ── Genre Merges ───────────────────────────────────────────────── */}
+        <section>
+          <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">Genre Merges</h2>
+          <div className="space-y-4">
+
+            {/* Merge form */}
+            <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4 sm:p-5">
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+                <div className="col-span-2 sm:col-auto">
+                  <label className="block text-xs text-zinc-400 mb-1">Merge genre</label>
+                  <input
+                    type="text"
+                    value={mergeFrom}
+                    onChange={(e) => setMergeFrom(e.target.value)}
+                    list="alias-from-options"
+                    placeholder="e.g. science-fiction"
+                    className="w-full sm:w-56 bg-zinc-900 border border-zinc-600 rounded px-3 py-2 sm:py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
+                  />
+                </div>
+                <div className="col-span-2 sm:col-auto">
+                  <label className="block text-xs text-zinc-400 mb-1">Into</label>
+                  <input
+                    type="text"
+                    value={mergeInto}
+                    onChange={(e) => setMergeInto(e.target.value)}
+                    list="alias-into-options"
+                    placeholder="e.g. sci-fi"
+                    className="w-full sm:w-56 bg-zinc-900 border border-zinc-600 rounded px-3 py-2 sm:py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-zinc-400"
+                    onKeyDown={(e) => e.key === 'Enter' && mergeGenres()}
+                  />
+                </div>
+                <button
+                  onClick={mergeGenres}
+                  className="col-span-2 sm:col-auto px-4 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
+                >
+                  Merge
+                </button>
+              </div>
+              <datalist id="alias-from-options">
+                {aliasData?.originals.filter((o) => !o.mergedInto).map((o) => <option key={o.genre} value={o.genre} />)}
+              </datalist>
+              <datalist id="alias-into-options">
+                {[
+                  ...new Set([
+                    ...(aliasData?.merges.map((m) => m.canonical) ?? []),
+                    ...(aliasData?.originals.filter((o) => !o.mergedInto).map((o) => o.genre) ?? []),
+                  ]),
+                ].map((g) => <option key={g} value={g} />)}
+              </datalist>
+              {aliasMsg && <p className="mt-2 text-xs text-zinc-400">{aliasMsg}</p>}
+              <p className="mt-2 text-xs text-zinc-500">
+                Merges only change how genres display and filter — raw tags on books stay untouched, so a split fully restores the originals.
+              </p>
+            </div>
+
+            {/* Merged genres */}
+            <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4 sm:p-5">
+              <h3 className="text-xs text-zinc-400 uppercase tracking-wider mb-3">Merged genres</h3>
+              {!aliasData || aliasData.merges.length === 0 ? (
+                <p className="text-xs text-zinc-500">No merged genres yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {aliasData.merges.map((m) => (
+                    <li
+                      key={m.canonical}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 rounded border border-zinc-700 bg-zinc-900 px-3 py-2"
+                    >
+                      <div className="min-w-0 text-sm">
+                        <span className="font-mono text-zinc-200">{m.canonical}</span>
+                        <span className="ml-2 text-xs text-zinc-500">{m.count.toLocaleString('en-US')} books</span>
+                        <div className="text-xs text-zinc-400 mt-0.5 break-words">← {m.sources.join(', ')}</div>
+                      </div>
+                      <button
+                        onClick={() => splitGenre(m.canonical)}
+                        className="shrink-0 self-start sm:self-auto px-3 py-1.5 rounded text-xs font-medium bg-zinc-700 hover:bg-zinc-600 text-zinc-200 transition-colors"
+                      >
+                        Split
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Original genres */}
+            <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h3 className="text-xs text-zinc-400 uppercase tracking-wider">Original genres</h3>
+                <input
+                  type="text"
+                  value={genreFilter}
+                  onChange={(e) => setGenreFilter(e.target.value)}
+                  placeholder="Filter original genres…"
+                  className="w-40 sm:w-56 bg-zinc-900 border border-zinc-600 rounded px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-zinc-400"
+                />
+              </div>
+              {!aliasData || aliasData.originals.length === 0 ? (
+                <p className="text-xs text-zinc-500">No genres yet.</p>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-0.5 pr-1">
+                  {aliasData.originals
+                    .filter((o) => !genreFilter || o.genre.includes(genreFilter.trim().toLowerCase()))
+                    .map((o) => (
+                      <button
+                        key={o.genre}
+                        onClick={() => setMergeFrom(o.genre)}
+                        title={`Use "${o.genre}" as merge source`}
+                        className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700/40 transition-colors"
+                      >
+                        <span className={`font-mono truncate ${o.mergedInto ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+                          {o.genre}
+                        </span>
+                        {o.mergedInto && <span className="shrink-0 text-zinc-500">→ {o.mergedInto}</span>}
+                        <span className="ml-auto shrink-0 text-zinc-500 italic">{o.count.toLocaleString('en-US')}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

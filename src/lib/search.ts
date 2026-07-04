@@ -1,5 +1,7 @@
 // Builds Atlas Search and regular MongoDB query stages from filter params.
 
+import { AliasMap, resolveGenre, sourcesFor } from './aliases'
+
 export interface SearchParams {
   q?: string
   genres: string[]
@@ -9,9 +11,17 @@ export interface SearchParams {
   minRatings: number
 }
 
+// A requested genre matched against the raw tags on books: the canonical
+// name plus everything merged into it. Requests for a tag that has itself
+// been merged resolve to its canonical first, so stale links keep working.
+// With no aliases this is just [genre].
+function rawSources(genre: string, aliases: AliasMap): string[] {
+  return sourcesFor(resolveGenre(genre, aliases), aliases)
+}
+
 // Returns the inner search expression for $search: { index, ...expr }
 // Only called when params.q is set (text search path).
-export function buildSearchExpr(params: SearchParams): object {
+export function buildSearchExpr(params: SearchParams, aliases: AliasMap = {}): object {
   const should: object[] = []
   const filter: object[] = []
   const mustNot: object[] = []
@@ -34,12 +44,16 @@ export function buildSearchExpr(params: SearchParams): object {
     })
   }
 
+  // An array-valued text query matches any of the terms — exactly the
+  // "book carries any raw source of this genre" semantics a merge needs.
   for (const genre of params.genres) {
-    filter.push({ text: { query: genre, path: 'genres' } })
+    const sources = rawSources(genre, aliases)
+    filter.push({ text: { query: sources.length === 1 ? sources[0] : sources, path: 'genres' } })
   }
 
   for (const genre of params.excludeGenres) {
-    mustNot.push({ text: { query: genre, path: 'genres' } })
+    const sources = rawSources(genre, aliases)
+    mustNot.push({ text: { query: sources.length === 1 ? sources[0] : sources, path: 'genres' } })
   }
 
   if (params.minRating > 0 || params.maxRating < 5) {
@@ -61,15 +75,31 @@ export function buildSearchExpr(params: SearchParams): object {
 // Builds a regular $match stage for genre facet counts.
 // Intentionally does NOT include text search (acceptable tradeoff — facets
 // reflect genre/rating filters only, not the text query).
-export function buildFacetMatch(params: SearchParams): Record<string, unknown> {
+export function buildFacetMatch(params: SearchParams, aliases: AliasMap = {}): Record<string, unknown> {
   const conditions: object[] = []
 
-  if (params.genres.length > 0) {
-    conditions.push({ genres: { $all: params.genres } })
+  // Genres without merges keep the compact $all shape; a merged genre needs
+  // "array contains any of its raw sources", one $in condition per genre so
+  // multiple included genres still AND together.
+  const plainIncludes: string[] = []
+  const expandedIncludes: string[][] = []
+  for (const g of params.genres) {
+    const sources = rawSources(g, aliases)
+    if (sources.length === 1) plainIncludes.push(sources[0])
+    else expandedIncludes.push(sources)
+  }
+
+  if (plainIncludes.length > 0) {
+    conditions.push({ genres: { $all: plainIncludes } })
+  }
+  for (const sources of expandedIncludes) {
+    conditions.push({ genres: { $in: sources } })
   }
 
   for (const g of params.excludeGenres) {
-    conditions.push({ genres: { $ne: g } })
+    const sources = rawSources(g, aliases)
+    if (sources.length === 1) conditions.push({ genres: { $ne: sources[0] } })
+    else conditions.push({ genres: { $nin: sources } })
   }
 
   if (params.minRating > 0 || params.maxRating < 5) {

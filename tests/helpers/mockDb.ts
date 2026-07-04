@@ -25,7 +25,9 @@ export interface MockCollection {
   find: Mock
   aggregate: Mock
   updateOne: Mock
+  updateMany: Mock
   insertOne: Mock
+  deleteMany: Mock
   bulkWrite: Mock
   countDocuments: Mock
 }
@@ -36,7 +38,9 @@ export function makeCollection(): MockCollection {
     find: vi.fn(() => makeCursor()),
     aggregate: vi.fn(() => ({ toArray: vi.fn().mockResolvedValue([]) })),
     updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    updateMany: vi.fn().mockResolvedValue({ acknowledged: true, modifiedCount: 0 }),
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    deleteMany: vi.fn().mockResolvedValue({ acknowledged: true, deletedCount: 0 }),
     bulkWrite: vi.fn().mockResolvedValue({ ok: 1 }),
     countDocuments: vi.fn().mockResolvedValue(0),
   }
