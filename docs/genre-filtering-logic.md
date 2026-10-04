@@ -24,8 +24,9 @@ A genre cannot be both included and excluded simultaneously — activating one s
 
 * **Include** (AND): a book must contain **all** included genres to appear
 * **Exclude** (NOT): a book containing **any** excluded genre is removed
-* Rating and ratings-count filters apply on top of genre filters
-* All conditions combine in a single `$match` (or Atlas Search `compound`) — logical AND of every clause
+* Rating, ratings-count and published-year filters apply on top of genre filters
+* All conditions combine in a single `$match` (or Atlas Search `compound`) — logical AND of every clause. The published-year range is the exception on the text-search path: `publishedYear` isn't in the search index, so it applies as a `$match` right after `$search`
+* A published-year bound only matches books that have a `publishedYear` (see `data-model.md` → Shelf fields)
 
 ### Merged genres
 
@@ -49,8 +50,8 @@ When genres have been merged in the admin panel (see `data-model.md` → genreAl
 ### Neutral genres (below)
 
 * The full genre list, sorted by descending book count under the current filters
-* The count shown reflects books remaining after the active genre/rating filters
-* Counts intentionally do **not** reflect the text search query (facets are genre/rating-scoped)
+* The count shown reflects books remaining after the active genre/rating/year filters
+* Counts intentionally do **not** reflect the text search query (facets are genre/rating/year-scoped)
 * The list is scrollable; a filter box at the top narrows it by substring match
 
 ### Selection behaviour

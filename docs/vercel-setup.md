@@ -109,6 +109,8 @@ The scraper runs automatically in the background via the Next.js instrumentation
 
 After setup, every push to `main` automatically triggers a new Vercel deployment. Environment variables persist across deployments — you only set them once.
 
+Because merging deploys, a change that writes a **new field** must have its MongoDB validator upgrade run against Atlas *before* the merge — the strict validators reject unknown fields. Upgrades are listed in `docs/mongo-setup.md` §2.6 (currently `scripts/mongo-upgrade-shelf-fields.js`) and need a user with `dbAdmin`.
+
 The repo's `tests` workflow runs the full Vitest suite on the same push. Deployment does not wait on it — check the Actions tab (or the README badge) for the result.
 
 ---
@@ -118,6 +120,7 @@ The repo's `tests` workflow runs the full Vitest suite on the same push. Deploym
 All of these are covered step-by-step in `docs/mongo-setup.md`:
 
 - [ ] Collections created with strict validators (section 2)
+- [ ] Existing databases: validator upgrades applied (section 2.6)
 - [ ] Indexes created (section 3)
 - [ ] `appConfig` singleton seeded (section 2.5)
 - [ ] Atlas Search index created and `READY` (section 4)

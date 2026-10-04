@@ -27,6 +27,7 @@ export interface MockCollection {
   updateOne: Mock
   updateMany: Mock
   insertOne: Mock
+  insertMany: Mock
   deleteMany: Mock
   bulkWrite: Mock
   countDocuments: Mock
@@ -40,6 +41,7 @@ export function makeCollection(): MockCollection {
     updateOne: vi.fn().mockResolvedValue({ acknowledged: true }),
     updateMany: vi.fn().mockResolvedValue({ acknowledged: true, modifiedCount: 0 }),
     insertOne: vi.fn().mockResolvedValue({ acknowledged: true }),
+    insertMany: vi.fn().mockResolvedValue({ acknowledged: true }),
     deleteMany: vi.fn().mockResolvedValue({ acknowledged: true, deletedCount: 0 }),
     bulkWrite: vi.fn().mockResolvedValue({ ok: 1 }),
     countDocuments: vi.fn().mockResolvedValue(0),
@@ -49,6 +51,9 @@ export function makeCollection(): MockCollection {
 export type MockDb = {
   collection: Mock
   collections: Record<string, MockCollection>
+  // Collection infos (name + options.validator); none by default, i.e. a
+  // database without validators.
+  listCollections: Mock
 }
 
 export function makeDb(preset: Record<string, MockCollection> = {}): MockDb {
@@ -59,5 +64,6 @@ export function makeDb(preset: Record<string, MockCollection> = {}): MockDb {
       if (!collections[name]) collections[name] = makeCollection()
       return collections[name]
     }),
+    listCollections: vi.fn(() => ({ toArray: vi.fn().mockResolvedValue([]) })),
   }
 }

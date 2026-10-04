@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RatingFilters from '@/components/RatingFilters'
 import { DEFAULT_FILTERS, FilterState } from '@/types'
@@ -79,5 +79,43 @@ describe('RatingFilters', () => {
   it('shows the up arrow when sorting ascending', () => {
     renderFilters({ sortDir: 'asc' })
     expect(screen.getByTitle('Toggle sort direction')).toHaveTextContent('↑')
+  })
+})
+
+describe('RatingFilters — published year', () => {
+  it('offers optional from/to year inputs, empty by default', () => {
+    renderFilters()
+    const yearGroup = group('Published year')
+    expect(yearGroup.getByLabelText('Published from year')).toHaveValue(null)
+    expect(yearGroup.getByLabelText('Published to year')).toHaveValue(null)
+  })
+
+  it('commits a typed year once after a short pause, not per keystroke', async () => {
+    const { onChange } = renderFilters()
+    await userEvent.type(screen.getByLabelText('Published from year'), '1980')
+    expect(onChange).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ minYear: 1980 }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('commits immediately on Enter and on blur', async () => {
+    const { onChange } = renderFilters()
+    await userEvent.type(screen.getByLabelText('Published to year'), '1979{Enter}')
+    expect(onChange).toHaveBeenCalledWith({ maxYear: 1979 })
+
+    await userEvent.type(screen.getByLabelText('Published from year'), '1950')
+    await userEvent.tab()
+    expect(onChange).toHaveBeenCalledWith({ minYear: 1950 })
+  })
+
+  it('clears a bound when the field is emptied', async () => {
+    const { onChange } = renderFilters({ minYear: 2023 })
+    const from = screen.getByLabelText('Published from year')
+    expect(from).toHaveValue(2023)
+
+    await userEvent.clear(from)
+    await userEvent.keyboard('{Enter}')
+    expect(onChange).toHaveBeenCalledWith({ minYear: null })
   })
 })

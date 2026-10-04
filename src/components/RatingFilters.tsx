@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { FilterState } from '@/types'
 
 interface Props {
@@ -9,6 +10,62 @@ interface Props {
 
 const RATING_PRESETS = [0, 3, 3.5, 4, 4.25, 4.5]
 const MIN_RATINGS_PRESETS = [0, 1000, 10000, 100000, 500000]
+
+// Typing a year commits after a short pause (or on Enter / blur), so "1980"
+// sends one request rather than one per digit.
+export const YEAR_COMMIT_DELAY_MS = 500
+
+function parseYear(text: string): number | null {
+  const t = text.trim()
+  if (!t) return null
+  const n = Number(t)
+  return Number.isInteger(n) ? n : null
+}
+
+function YearInput({
+  label, placeholder, value, onCommit,
+}: { label: string; placeholder: string; value: number | null; onCommit: (year: number | null) => void }) {
+  const [draft, setDraft] = useState(value === null ? '' : String(value))
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Latest committed value, read by delayed commits so they never re-send it.
+  const current = useRef(value)
+  current.current = value
+
+  // Follow outside changes (e.g. a committed value coming back down).
+  useEffect(() => {
+    setDraft(value === null ? '' : String(value))
+  }, [value])
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current)
+  }, [])
+
+  function commit(text: string) {
+    if (timer.current) clearTimeout(timer.current)
+    const year = parseYear(text)
+    if (year !== current.current) onCommit(year)
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      aria-label={label}
+      placeholder={placeholder}
+      value={draft}
+      onChange={(e) => {
+        const text = e.target.value
+        setDraft(text)
+        if (timer.current) clearTimeout(timer.current)
+        timer.current = setTimeout(() => commit(text), YEAR_COMMIT_DELAY_MS)
+      }}
+      onBlur={() => commit(draft)}
+      onKeyDown={(e) => e.key === 'Enter' && commit(draft)}
+      className="w-20 rounded px-2 py-2 md:py-1 text-sm focus:outline-none"
+      style={{ background: 'var(--bg-element)', color: 'var(--text)', border: '1px solid var(--border-sub)' }}
+    />
+  )
+}
 
 function PresetButton({
   active, onClick, children,
@@ -52,6 +109,27 @@ export default function RatingFilters({ filters, onChange }: Props) {
               {n === 0 ? 'Any' : `≥ ${n.toLocaleString('en-US')}`}
             </PresetButton>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+          Published year
+        </label>
+        <div className="flex items-center gap-1.5">
+          <YearInput
+            label="Published from year"
+            placeholder="From"
+            value={filters.minYear}
+            onCommit={(minYear) => onChange({ minYear })}
+          />
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }} aria-hidden="true">–</span>
+          <YearInput
+            label="Published to year"
+            placeholder="To"
+            value={filters.maxYear}
+            onCommit={(maxYear) => onChange({ maxYear })}
+          />
         </div>
       </div>
 

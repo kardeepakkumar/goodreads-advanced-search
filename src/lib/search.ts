@@ -9,6 +9,17 @@ export interface SearchParams {
   minRating: number
   maxRating: number
   minRatings: number
+  minYear?: number // published year bounds, inclusive; absent = open-ended
+  maxYear?: number
+}
+
+// publishedYear bounds as a match condition, or null when neither is set.
+// Books without a publishedYear never match an active year filter.
+export function publishedYearRange(params: SearchParams): Record<string, number> | null {
+  const range: Record<string, number> = {}
+  if (params.minYear !== undefined) range.$gte = params.minYear
+  if (params.maxYear !== undefined) range.$lte = params.maxYear
+  return Object.keys(range).length > 0 ? range : null
 }
 
 // A requested genre matched against the raw tags on books: the canonical
@@ -74,7 +85,7 @@ export function buildSearchExpr(params: SearchParams, aliases: AliasMap = {}): o
 
 // Builds a regular $match stage for genre facet counts.
 // Intentionally does NOT include text search (acceptable tradeoff — facets
-// reflect genre/rating filters only, not the text query).
+// reflect genre/rating/year filters only, not the text query).
 export function buildFacetMatch(params: SearchParams, aliases: AliasMap = {}): Record<string, unknown> {
   const conditions: object[] = []
 
@@ -108,6 +119,11 @@ export function buildFacetMatch(params: SearchParams, aliases: AliasMap = {}): R
 
   if (params.minRatings > 0) {
     conditions.push({ numRatings: { $gte: params.minRatings } })
+  }
+
+  const years = publishedYearRange(params)
+  if (years) {
+    conditions.push({ publishedYear: years })
   }
 
   return conditions.length > 0 ? { $and: conditions } : {}

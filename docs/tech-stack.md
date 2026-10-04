@@ -41,6 +41,7 @@
 * Wildcard prefix matching to catch substrings (e.g. "murder" → "murderbot")
 * Genre facet counts always come from a regular aggregation (`$unwind` → `$group`)
 * Genre merges (`genreAliases`) resolve at query time: filters expand to raw source tags, facets and results map to canonical names with per-book dedup
+* Published-year range: a plain `publishedYear` condition in the `$match` (and the facet match); on the text path it runs as a `$match` right after `$search`, since the shelf fields aren't in the search index
 
 ---
 
@@ -61,14 +62,16 @@
 * Scraping state lives in the `scrapeJobs` MongoDB collection
 * Each tick processes one genre shelf page: fetch → parse → bulk upsert
 * Background ticker runs as a persistent loop started via Next.js `instrumentation.ts` on server boot
-* Rate limit (default 10 seconds) is stored in `appConfig` and enforced via `lastRequestAt` on the job document
+* Rate limit is stored in `appConfig.rateLimitMs` (seeded at 3 seconds; the code falls back to 10 seconds if unset) and enforced via `lastRequestAt` on the job document
+* Shelf fields (scraper v2): `publishedYear`, `coverUrl`, `authorUrl`, per-genre `shelvedCounts` — `$set` on every visit, so a re-scrape fills them in; the admin re-scrape migration queues that for every genre that still needs it
 
 ### Rate Limiting & Resilience
 
-* **Default rate limit**: 1 request per 10 seconds (configurable in `appConfig` via MongoDB)
+* **Rate limit**: 1 request per `appConfig.rateLimitMs` per job (configurable in MongoDB, not in the UI)
 * Timeouts revert the job to `queued` status — same page is retried on next tick
 * `bulkWrite` uses `ordered: false` — individual document failures don't abort the rest of the page
 * Books with unparseable ratings get default values (`avgRating: 0`) on first insert; existing books are unaffected
+* A page where every upsert is rejected (e.g. a validator that predates new fields) fails the job instead of advancing
 
 ### Failure Handling
 

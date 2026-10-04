@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/mongodb'
-import { buildSearchExpr, buildFacetMatch, SearchParams } from '@/lib/search'
+import { buildSearchExpr, buildFacetMatch, publishedYearRange, SearchParams } from '@/lib/search'
 import { getAliasMap, hasAliases, canonicalGenresExpr } from '@/lib/aliases'
 import { BooksResponse } from '@/types'
 
 const PAGE_SIZE = 25
+
+// Optional integer query param; absent or malformed → undefined (no bound).
+function optionalInt(value: string | null): number | undefined {
+  if (value === null || value.trim() === '') return undefined
+  const n = Number(value)
+  return Number.isInteger(n) ? n : undefined
+}
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
@@ -16,6 +23,8 @@ export async function GET(req: NextRequest) {
     minRating: parseFloat(sp.get('minRating') || '0'),
     maxRating: parseFloat(sp.get('maxRating') || '5'),
     minRatings: parseInt(sp.get('minRatings') || '0', 10),
+    minYear: optionalInt(sp.get('minYear')),
+    maxYear: optionalInt(sp.get('maxYear')),
   }
 
   const sortBy = sp.get('sortBy') || 'avgRating'
@@ -78,8 +87,13 @@ export async function GET(req: NextRequest) {
           ? { $sort: { _searchScore: -1, avgRating: -1 } }
           : { $sort: { [effectiveSortField]: sortDir } }
 
+      // publishedYear isn't in the Atlas Search index mapping, so the year
+      // bounds filter right after $search instead of as a compound clause.
+      const yearRange = publishedYearRange(params)
+
       booksPipeline = [
         { $search: { index: 'books_search_v1', ...searchExpr } },
+        ...(yearRange ? [{ $match: { publishedYear: yearRange } }] : []),
         { $addFields: { _searchScore: { $meta: 'searchScore' } } },
         textSortStage,
         {

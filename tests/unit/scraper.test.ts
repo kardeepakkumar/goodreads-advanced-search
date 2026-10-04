@@ -177,4 +177,117 @@ describe('scrapeShelfPage', () => {
     books.bulkWrite.mockRejectedValueOnce(new Error('connection reset'))
     await expect(scrapeShelfPage('fantasy', 1, '')).rejects.toThrow('connection reset')
   })
+
+  it('fails the page instead of advancing when every upsert is rejected (e.g. a stale validator)', async () => {
+    stubPage(shelfPageHtml(fullShelfPage('fantasy', 2)))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const rejectedAll = Object.assign(new Error('Document failed validation'), {
+      name: 'MongoBulkWriteError',
+      result: { nInserted: 0 },
+      writeErrors: [{}, {}],
+    })
+    books.bulkWrite.mockRejectedValueOnce(rejectedAll)
+    await expect(scrapeShelfPage('fantasy', 4, '')).rejects.toThrow(
+      'All 2 book writes failed on page 4: Document failed validation'
+    )
+  })
+})
+
+describe('scrapeShelfPage — shelf fields (scraper v2)', () => {
+  let books: MockCollection
+
+  beforeEach(() => {
+    books = makeCollection()
+    ;(getDb as Mock).mockResolvedValue(makeDb({ books }))
+  })
+
+  async function scrapeOne(book: Parameters<typeof shelfPageHtml>[0][number], genre = 'fantasy') {
+    axiosGet.mockResolvedValue({ data: shelfPageHtml([book]) })
+    await scrapeShelfPage(genre, 1, '')
+    return books.bulkWrite.mock.calls[0][0][0].updateOne.update
+  }
+
+  it('captures published year, cover, author link and the shelf count, keyed by genre', async () => {
+    const update = await scrapeOne({
+      href: '/book/show/42844155-harry-potter-and-the-philosopher-s-stone',
+      title: "Harry Potter and the Philosopher's Stone (Harry Potter, #1)",
+      author: 'J.K. Rowling',
+      authorHref: 'https://www.goodreads.com/author/show/1077326.J_K_Rowling',
+      coverSrc:
+        'https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1598823299l/42844155._SX50_.jpg',
+      shelvedCount: 90719,
+      ratingText: 'avg rating 4.47 — 11,851,697 ratings — published 1997',
+    })
+
+    expect(update.$set.publishedYear).toBeInstanceOf(Int32)
+    expect(update.$set.publishedYear.value).toBe(1997)
+    expect(update.$set.coverUrl).toBe(
+      'https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1598823299l/42844155._SX50_.jpg'
+    )
+    expect(update.$set.authorUrl).toBe('https://www.goodreads.com/author/show/1077326.J_K_Rowling')
+    expect(update.$set['shelvedCounts.fantasy']).toBeInstanceOf(Int32)
+    expect(update.$set['shelvedCounts.fantasy'].value).toBe(90719)
+  })
+
+  it('writes shelf fields through $set only — that is how a re-scrape fills them into existing books', async () => {
+    const update = await scrapeOne({
+      href: '/book/show/1.A',
+      title: 'A',
+      author: 'B',
+      coverSrc: 'https://i.gr-assets.com/a._SX50_.jpg',
+      shelvedCount: 12,
+      ratingText: 'avg rating 4.0 — 10 ratings — published 2000',
+    })
+
+    for (const field of ['publishedYear', 'coverUrl', 'authorUrl', 'shelvedCounts']) {
+      expect(update.$setOnInsert).not.toHaveProperty(field)
+    }
+    // Genre accumulation is untouched by the new fields.
+    expect(update.$addToSet).toEqual({ genres: 'fantasy', genresAutocomplete: 'fantasy' })
+  })
+
+  it('normalizes relative author links and parses BCE publication years', async () => {
+    const update = await scrapeOne({
+      href: '/book/show/1381.The_Odyssey',
+      title: 'The Odyssey',
+      author: 'Homer',
+      authorHref: '/author/show/903.Homer',
+      ratingText: 'avg rating 3.87 — 1,234,567 ratings — published -700',
+    })
+
+    expect(update.$set.authorUrl).toBe('https://www.goodreads.com/author/show/903.Homer')
+    expect(update.$set.publishedYear.value).toBe(-700)
+  })
+
+  it('leaves out fields the page does not show, so a stored value is never overwritten', async () => {
+    const update = await scrapeOne({
+      href: '/book/show/2.B',
+      title: 'No Extras',
+      author: 'C',
+      ratingText: 'avg rating 4.1 — 99 ratings',
+    })
+
+    expect(update.$set).not.toHaveProperty('publishedYear')
+    expect(update.$set).not.toHaveProperty('coverUrl')
+    expect(Object.keys(update.$set).some((k) => k.startsWith('shelvedCounts'))).toBe(false)
+  })
+
+  it('stores each shelf count under its own genre and skips slugs that cannot be field names', async () => {
+    const shelved = {
+      href: '/book/show/3.C',
+      title: 'C',
+      author: 'D',
+      shelvedCount: 321,
+      ratingText: 'avg rating 4.2 — 50 ratings — published 2010',
+    }
+
+    const ya = await scrapeOne(shelved, 'young-adult')
+    expect(ya.$set['shelvedCounts.young-adult'].value).toBe(321)
+
+    books.bulkWrite.mockClear()
+    const dotted = await scrapeOne(shelved, 'sci.fi')
+    expect(Object.keys(dotted.$set).some((k) => k.startsWith('shelvedCounts'))).toBe(false)
+    expect(dotted.$set.publishedYear.value).toBe(2010) // other fields still land
+  })
 })

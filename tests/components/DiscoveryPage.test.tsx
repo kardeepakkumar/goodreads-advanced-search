@@ -131,6 +131,29 @@ describe('DiscoveryPage — API URL contract', () => {
     )
   })
 
+  it('sends published year bounds only when set, either end open', async () => {
+    await renderDiscovery()
+    const before = booksCalls().length
+
+    const from = screen.getByLabelText('Published from year')
+    await userEvent.type(from, '1950{Enter}')
+    await waitFor(() =>
+      expect(lastBooksQuery()).toBe('minYear=1950&sortBy=avgRating&sortDir=desc&page=1')
+    )
+    expect(booksCalls().length).toBe(before + 1) // one request, not one per digit
+
+    await userEvent.type(screen.getByLabelText('Published to year'), '1979{Enter}')
+    await waitFor(() =>
+      expect(lastBooksQuery()).toBe('minYear=1950&maxYear=1979&sortBy=avgRating&sortDir=desc&page=1')
+    )
+
+    await userEvent.clear(from)
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() =>
+      expect(lastBooksQuery()).toBe('maxYear=1979&sortBy=avgRating&sortDir=desc&page=1')
+    )
+  })
+
   it('paginates without resetting filters, and filter changes reset to page 1', async () => {
     await renderDiscovery()
 
