@@ -37,9 +37,36 @@ Add a genre to the scraping queue.
 | Start page | No | 1 | Resume a partial scrape from a specific page |
 | Max page | No | 25 | Stop after this many pages (50 books/page = up to 1,250 books) |
 
+New jobs are stamped `scraperVersion: 2`, `kind: "manual"`.
+
 ---
 
-## Section 3: Genre Merges
+## Section 3: Re-scrape for New Fields
+
+One-time (and safely re-runnable) migration that fills the shelf fields — published year, cover image, author link, per-genre shelved count — into books scraped before the scraper captured them. Mechanics in `scraping-architecture.md` → Re-scrape Migration.
+
+### Books
+
+* How many books have **all 4 fields**, and how many are **missing at least one**
+* Per field: books with it / without it
+* Some books stay incomplete after a re-scrape: Goodreads shows no year for a few, and books that have dropped off a genre's scraped pages aren't revisited
+
+### Genres
+
+* Counts per status — *up to date*, *re-scraped*, *in queue*, *failed*, *needs re-scrape*
+* The plan: how many genres and pages a re-scrape would fetch, with a time estimate at the current rate limit
+* **Queue re-scrape for N genres** — queues one job per *failed* / *needs re-scrape* genre (`kind: "backfill"`, pages 1 to the genre's previous depth, 25 if it has no job history). Genres already covered, already queued, or first scraped after the change are skipped, so pressing it again only retries what still needs it
+* **Per-genre status** (expandable) — genre, status, books tagged with it, books with its shelved count, pages to scrape; what still needs doing is listed first
+
+### Safety
+
+* Jobs go through the normal queue: same cookie, same rate limit, same background ticker
+* If the MongoDB validators haven't been upgraded for the new fields (`mongo-setup.md` §2.6), the section shows a warning and the queue button stays disabled (the API answers 409)
+* The overview aggregates every book, so it loads when the page opens and on **Refresh** — it isn't polled
+
+---
+
+## Section 4: Genre Merges
 
 Manual, deliberate genre normalization. Merges apply at query/display time only — raw tags on books are never rewritten, so every merge is fully reversible.
 
@@ -66,7 +93,7 @@ Effect on the public page: the genre sidebar, facet counts, and book genre chips
 
 ---
 
-## Section 4: Scraper Log
+## Section 5: Scraper Log
 
 * Shows the last 20 lines of scraper activity
 * Polled from the server every 3 seconds
@@ -75,11 +102,12 @@ Effect on the public page: the genre sidebar, facet counts, and book genre chips
 
 ---
 
-## Section 5: Recent Jobs
+## Section 6: Recent Jobs
 
 * Shows the last 20 jobs, sorted by creation time
 * Auto-refreshes every 4 seconds when a job is active, every 20 seconds when idle
 * Columns: genre, status, current page, pages scraped, max page, created, error
+* Jobs queued by the re-scrape migration carry a small `re-scrape` label next to the genre
 
 ### Job statuses
 

@@ -53,9 +53,14 @@ All fields come from a single GET per page. No book detail page visit is needed 
 | `author` | `.authorName` text | Full name |
 | `avgRating` | `.smallText` text | Regex: `avg rating\s+([\d.]+)` → parseFloat |
 | `numRatings` | `.smallText` text | Regex: `—\s*([\d,]+)\s+rating` → strip commas → parseInt |
-| `coverImageUrl` | `img[src]` | Thumbnail URL; strip size suffix for full-res (see below) |
+| `publishedYear` | `.greyText.smallText` text | Regex: `published\s+(-?\d+)` (negative for BCE works) |
+| `coverUrl` | `a.leftAlignedImage img[src]` | 50px thumbnail URL; strip size suffix for full-res (see below) |
+| `authorUrl` | `.authorName` href | Absolute author URL; the author ID follows `/author/show/` |
+| `shelvedCounts.<genre>` | bare text node in `.left` | `(shelved 90719 times as <em>fantasy</em>)` → regex `shelved\s+([\d,]+)\s+times` — per-genre popularity; the shelf page is sorted by it |
 
-**Field coverage:** 96–100% across all 50 books per page.
+**Field coverage:** 96–100% across all 50 books per page. A live check on `fantasy` page 1 (2026-10-04) found every field above on all 50 entries.
+
+Since scraper v2 (2026-10) every field above is stored; before that the scraper kept only the first five. The logged-in page also carries the account's own shelf/rating widgets and form tokens per entry; those are never stored.
 
 ### Genre assignment
 
@@ -82,7 +87,9 @@ These require visiting individual book detail pages — which this application *
 
 * Genre tags (handled by shelf context instead)
 * Description / synopsis
-* Page count, ISBN, series, publisher, exact publish date
+* Page count, ISBN, publisher, exact publish date (only the year is shown)
+* Series as a field (it appears only inside the title text, e.g. `(Harry Potter, #1)`)
+* Co-authors (each entry shows one author)
 * Review text, awards
 
 ---

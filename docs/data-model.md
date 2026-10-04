@@ -45,11 +45,21 @@
     "non-fiction"
   ],
   "firstSeenGenre": "biography",
+  "publishedYear": 2011,
+  "coverUrl": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1511288482l/11084145._SX50_.jpg",
+  "authorUrl": "https://www.goodreads.com/author/show/7111.Walter_Isaacson",
+  "shelvedCounts": {
+    "biography": 12403,
+    "business": 2510,
+    "non-fiction": 8817
+  },
   "schemaVersion": 1,
   "createdAt": "2025-12-22T00:00:00.000Z",
   "updatedAt": "2025-12-22T00:00:00.000Z"
 }
 ```
+
+The four fields after `firstSeenGenre` are the **shelf fields**, captured since scraper v2 — see below.
 
 ### Field Rules
 
@@ -62,7 +72,11 @@
 * `genres` (array of strings) — required, non-empty; exact shelf slug strings; no duplicates; no empty strings
 * `genresAutocomplete` (array of strings) — mirrors `genres`; used only for prefix-only autocomplete via Atlas Search
 * `firstSeenGenre` (string) — required; the genre shelf page that first discovered this book; never updated after insert
-* `schemaVersion` (int) — required, for future migrations
+* `publishedYear` (int) — optional; from "published 2011" on the shelf page; negative for BCE works (`-700`)
+* `coverUrl` (string) — optional; the cover image exactly as the shelf page shows it — a 50px thumbnail (`…/11084145._SX50_.jpg`); strip the `._SX50_` size suffix for full resolution
+* `authorUrl` (string) — optional; absolute Goodreads URL of the author shown on the shelf page (the author ID is the number after `/author/show/`)
+* `shelvedCounts` (object) — optional; per raw genre slug, how many times readers shelved the book as that genre ("shelved 90719 times as fantasy"). Keyed by the slug of the shelf it was scraped from; a book gains one key per genre it is scraped under
+* `schemaVersion` (int) — required, for future migrations. Stays `1`: the shelf fields are optional and additive, so their presence is checked per field
 * `createdAt`, `updatedAt` (date) — required timestamps
 
 ### Insertion / Update Rules
@@ -71,10 +85,20 @@
   * `genres` = `[currentGenre]`
   * `genresAutocomplete` = `[currentGenre]`
   * `firstSeenGenre` = `currentGenre`
-* **When an existing book URL is found on a new genre shelf**:
+  * `title`, `author`, `firstSeenGenre`, `schemaVersion`, `createdAt` are written only here (`$setOnInsert`) and never change afterwards
+* **Every time a book is found on a shelf page** (new or existing):
   * `$addToSet: { genres: currentGenre, genresAutocomplete: currentGenre }`
-  * `$set: { updatedAt: <now> }`
-  * All other fields are left unchanged
+  * `$set: { updatedAt: <now> }`, plus `avgRating` / `numRatings` when they parse
+  * `$set` of each shelf field the page shows: `publishedYear`, `coverUrl`, `authorUrl`, and `shelvedCounts.<currentGenre>` (dotted path, so other genres' counts stay)
+  * A value the page doesn't show is simply not written — it never overwrites one stored earlier
+
+### Shelf fields (scraper v2)
+
+Books scraped before v2 — including the `books_raw.jl` bootstrap — have none of the four shelf fields. Because the scraper writes them with `$set` on every visit, re-scraping a genre's shelf fills them into the existing books. The admin panel's **Re-scrape for New Fields** section does that for every genre that still needs it (see `admin-panel.md` and `scraping-architecture.md`).
+
+A book can stay without a field after a re-scrape: Goodreads shows no year for a few books, and books that have dropped out of every scraped page range aren't revisited. Filtering by published year only ever matches books that have `publishedYear`.
+
+`shelvedCounts` keys are genre slugs written through a `$set` path, so a slug containing `.` or starting with `$` gets no shelved count (every other field is still written).
 
 ---
 
@@ -137,6 +161,8 @@ Tracks the admin scraping queue and per-job progress.
   "override": false,
   "lastRequestAt": "2025-12-22T00:00:00.000Z",
   "error": null,
+  "scraperVersion": 2,
+  "kind": "manual",
   "schemaVersion": 1,
   "createdAt": "2025-12-22T00:00:00.000Z",
   "updatedAt": "2025-12-22T00:00:00.000Z"
@@ -153,7 +179,9 @@ Tracks the admin scraping queue and per-job progress.
 * `pagesScraped` — count of pages successfully processed
 * `lastRequestAt` — timestamp of the last HTTP request made; used to enforce rate limiting across invocations
 * `error` — null when healthy; set to an error string or object on failure
-* `override` — if true, this job was allowed to run even if the genre had been scraped before
+* `override` — if true, this job was allowed to run even if the genre had been scraped before (re-scrape migration jobs always set it)
+* `scraperVersion` — the scraper version the job was created for: `2` since the shelf fields. Absent on older jobs (implicitly v1). The re-scrape migration reads it to tell which genres a v2 job has already covered
+* `kind` — `manual` (Queue Job form) or `backfill` (re-scrape migration). Absent on older jobs
 
 ### Status Values
 

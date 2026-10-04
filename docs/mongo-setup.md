@@ -62,6 +62,14 @@ db.createCollection("books", {
           items: { bsonType: "string", minLength: 1 }
         },
         firstSeenGenre:       { bsonType: "string", minLength: 1 },
+        // Shelf fields (scraper v2) — optional, absent on books not yet re-scraped
+        publishedYear:        { bsonType: ["int", "long"] },
+        coverUrl:             { bsonType: "string", minLength: 1 },
+        authorUrl:            { bsonType: "string", minLength: 1 },
+        shelvedCounts: {
+          bsonType: "object",
+          additionalProperties: { bsonType: ["int", "long"], minimum: 0 }
+        },
         schemaVersion:        { bsonType: "int", minimum: 1 },
         createdAt:            { bsonType: "date" },
         updatedAt:            { bsonType: "date" }
@@ -142,6 +150,9 @@ db.createCollection("scrapeJobs", {
         override:       { bsonType: "bool" },
         lastRequestAt:  { bsonType: ["date", "null"] },
         error:          { bsonType: ["object", "string", "null"] },
+        // Scraper v2 — optional, absent on jobs created before it
+        scraperVersion: { bsonType: "int", minimum: 1 },
+        kind:           { enum: ["manual", "backfill"] },
         schemaVersion:  { bsonType: "int", minimum: 1 },
         createdAt:      { bsonType: "date" },
         updatedAt:      { bsonType: "date" }
@@ -184,6 +195,23 @@ db.appConfig.insertOne({
   updatedAt: new Date()
 });
 ```
+
+### 2.6 Upgrading an existing database
+
+The validators use `additionalProperties: false`, so a field they don't list is rejected outright. When the code starts writing a new field, the live validator has to learn it **first** (`collMod` replaces a validator wholesale).
+
+| Upgrade | Adds | Script |
+|---|---|---|
+| Scraper v2 — shelf fields + re-scrape migration | `books`: `publishedYear`, `coverUrl`, `authorUrl`, `shelvedCounts` · `scrapeJobs`: `scraperVersion`, `kind` | `scripts/mongo-upgrade-shelf-fields.js` |
+
+```bash
+mongosh "$MONGODB_URI" --file scripts/mongo-upgrade-shelf-fields.js
+```
+
+* Run it **before** the code that writes the fields is deployed — every push to `main` deploys, so before merging. If the code goes first, book writes on every scrape page are rejected (the job fails with `All N book writes failed … Document failed validation`) and queuing a job returns 500
+* `collMod` needs a user with `dbAdmin` (or Atlas admin) on `goodreadsBooks`; the app's `readWrite` user can't run it
+* Idempotent — the script sets the full validators shown in 2.1 and 2.4, and every existing document stays valid (all new fields are optional)
+* The admin panel checks the live validators and blocks the re-scrape migration until this has run
 
 ---
 
@@ -251,6 +279,7 @@ Notes:
 * `genres` uses `lucene.keyword` for exact match filtering (include/exclude)
 * `genresAutocomplete` uses `edgeGram` autocomplete for prefix search in the genre search bar
 * `title` and `author` use `lucene.standard` for fuzzy full-text search
+* The shelf fields are deliberately **not** mapped (`dynamic: false` ignores them). The published-year filter runs as a regular `$match` right after `$search`, so it needs no index change
 
 ### 4.2 Create the index (Atlas CLI)
 
@@ -280,5 +309,7 @@ The index builds asynchronously. Status will show `BUILDING` initially, then `RE
 * Genre merges (`genreAliases`, managed in the admin panel) are resolved at query/display time — stored documents always carry raw tags
 * All writes must set `schemaVersion`, `createdAt` (insert only), `updatedAt` (every write)
 * Use `$addToSet` for `genres` and `genresAutocomplete` — never overwrite the full array
+* Shelf fields are written with `$set` only when the page shows them; per-genre shelf counts go through the dotted path `shelvedCounts.<genre>` so other genres' counts stay
+* Adding a field to any collection means widening its validator first — see 2.6
 
 > This file is the source of truth for recreating the database from scratch (collections, validators, indexes, search index). The one-time `migration/` bootstrap scripts that originally executed it were removed after the migration completed.

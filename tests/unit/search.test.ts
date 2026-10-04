@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSearchExpr, buildFacetMatch, SearchParams } from '@/lib/search'
+import { buildSearchExpr, buildFacetMatch, publishedYearRange, SearchParams } from '@/lib/search'
 
 function params(overrides: Partial<SearchParams> = {}): SearchParams {
   return {
@@ -103,5 +103,32 @@ describe('buildFacetMatch', () => {
         { numRatings: { $gte: 500 } },
       ],
     })
+  })
+
+  it('adds an inclusive publishedYear range after the rating clauses', () => {
+    const match = buildFacetMatch(params({ minRatings: 500, minYear: 1950, maxYear: 1979 }))
+    expect(match).toEqual({
+      $and: [
+        { numRatings: { $gte: 500 } },
+        { publishedYear: { $gte: 1950, $lte: 1979 } },
+      ],
+    })
+  })
+})
+
+describe('publishedYearRange', () => {
+  it('is null when neither bound is set', () => {
+    expect(publishedYearRange(params())).toBeNull()
+  })
+
+  it('supports open-ended ranges ("before 1980", "2023 onwards") and both bounds', () => {
+    expect(publishedYearRange(params({ maxYear: 1979 }))).toEqual({ $lte: 1979 })
+    expect(publishedYearRange(params({ minYear: 2023 }))).toEqual({ $gte: 2023 })
+    expect(publishedYearRange(params({ minYear: -800, maxYear: 0 }))).toEqual({ $gte: -800, $lte: 0 })
+  })
+
+  it('never enters the Atlas Search expression (publishedYear is not in the search index)', () => {
+    const expr = buildSearchExpr(params({ q: 'x', minYear: 2000 })) as any
+    expect(expr.compound.filter).toBeUndefined()
   })
 })

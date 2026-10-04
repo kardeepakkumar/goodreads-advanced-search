@@ -135,6 +135,37 @@ describe('GET /api/books', () => {
     expect(booksPipeline[0]).toEqual({ $sort: { avgRating: -1 } })
   })
 
+  it('filters by published year in both pipelines when bounds are given', async () => {
+    await run('?minYear=1950&maxYear=1979')
+
+    const expectedMatch = { $and: [{ publishedYear: { $gte: 1950, $lte: 1979 } }] }
+    const { books: booksPipeline, facets } = pipelinesOf(books)
+    expect(booksPipeline[0]).toEqual({ $match: expectedMatch })
+    expect(facets[0]).toEqual({ $match: expectedMatch })
+  })
+
+  it('supports open-ended year ranges and ignores malformed bounds', async () => {
+    await run('?minYear=2023')
+    let { books: booksPipeline } = pipelinesOf(books)
+    expect(booksPipeline[0]).toEqual({ $match: { $and: [{ publishedYear: { $gte: 2023 } }] } })
+
+    books.aggregate.mockClear()
+    await run('?maxYear=soon&minYear=')
+    ;({ books: booksPipeline } = pipelinesOf(books))
+    expect(booksPipeline[0]).toEqual({ $sort: { avgRating: -1 } })
+  })
+
+  it('applies year bounds right after $search on the text path', async () => {
+    await run('?q=dune&maxYear=1979')
+
+    const { books: booksPipeline, facets } = pipelinesOf(books)
+    expect((booksPipeline[0] as any).$search.compound.filter).toBeUndefined()
+    expect(booksPipeline[1]).toEqual({ $match: { publishedYear: { $lte: 1979 } } })
+    expect(booksPipeline[2]).toEqual({ $addFields: { _searchScore: { $meta: 'searchScore' } } })
+    expect(booksPipeline[3]).toEqual({ $sort: { avgRating: -1 } })
+    expect(facets[0]).toEqual({ $match: { $and: [{ publishedYear: { $lte: 1979 } }] } })
+  })
+
   it('clamps the page number to 1', async () => {
     await run('?page=0')
     const { books: booksPipeline } = pipelinesOf(books)

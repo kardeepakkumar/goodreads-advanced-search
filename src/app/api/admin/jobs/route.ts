@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { sessionOptions, SessionData } from '@/lib/auth'
 import { getDb } from '@/lib/mongodb'
+import { SCRAPER_VERSION } from '@/lib/shelfFields'
 import { ScrapeJob } from '@/types'
 import { ObjectId, Int32 } from 'mongodb'
 
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
       override,
       lastRequestAt: null,
       error: null,
+      scraperVersion: new Int32(SCRAPER_VERSION),
+      kind: 'manual',
       schemaVersion: new Int32(1),
       createdAt: now,
       updatedAt: now,

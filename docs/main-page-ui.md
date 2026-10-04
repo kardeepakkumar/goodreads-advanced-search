@@ -19,7 +19,7 @@ Same as desktop except the genre panel becomes a **slide-over drawer**, opened v
 ## Phone (below `md`)
 
 * Genre panel: slide-over drawer (as tablet)
-* Rating/sort controls: collapsed behind a **"Filters"** toolbar button (a dot marks non-default filters); the same controls, just disclosed
+* Rating/year/sort controls: collapsed behind a **"Filters"** toolbar button (a dot marks non-default filters, including a year bound); the same controls, just disclosed
 * Results: each row renders as a **card** — title, author, stars + rating + ratings count, genre chips. Same data, same semantics, restyled with CSS only
 * Larger touch targets throughout; safe-area padding for the iOS home indicator; `dvh`-based viewport height
 
@@ -32,10 +32,11 @@ Same as desktop except the genre panel becomes a **slide-over drawer**, opened v
 * Debounced 400ms — one request per pause in typing
 * Clear (×) button appears while text is present
 
-## Rating / sort controls
+## Rating / year / sort controls
 
 * **Min avg rating** presets: Any, ≥ 3, ≥ 3.5, ≥ 4, ≥ 4.25, ≥ 4.5
 * **Min ratings count** presets: Any, ≥ 1,000, ≥ 10,000, ≥ 100,000, ≥ 500,000
+* **Published year**: optional *From* / *To* inputs, inclusive, either end may be left empty ("before 1980" = To 1979; "2023 onwards" = From 2023). A typed year applies after a 0.5 s pause, or immediately on Enter / leaving the field — one request per value, not per digit. Emptying a field removes that bound. While a bound is set, books without a known `publishedYear` are left out
 * **Sort by**: Avg rating (default, desc), Num ratings, Title, Search rank — plus an asc/desc direction toggle
 * "Search rank" sorts by Atlas Search relevance when a text query is present; without one it falls back to avg rating
 
@@ -46,7 +47,7 @@ Steam-style three-state tags — see `genre-filtering-logic.md` for the full sem
 * Every genre row: include checkbox · name · book count (neutral rows only) · exclude minus
 * Active genres pin to the top **in the order they were selected**
 * A filter box narrows the list; active genres always stay visible
-* Counts reflect the current genre/rating filters (not the text query)
+* Counts reflect the current genre/rating/year filters (not the text query)
 * Merged genres appear under their canonical name only (see `data-model.md` → genreAliases)
 
 ## Stats bar

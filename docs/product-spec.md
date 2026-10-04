@@ -2,7 +2,7 @@
 
 ## Product Vision
 
-A genre-first book discovery web application that allows users to explore books using **combinatorial genre filtering**, rating thresholds, and deterministic sorting — powered by a **curated, append-only Goodreads-derived dataset**.
+A genre-first book discovery web application that allows users to explore books using **combinatorial genre filtering**, rating thresholds, publication-year ranges, and deterministic sorting — powered by a **curated, append-only Goodreads-derived dataset**.
 
 The application prioritizes:
 
@@ -38,7 +38,7 @@ The application prioritizes:
 * **Book URL is the global unique identifier**
 * Goodreads **book detail pages are never visited** — all data comes from genre shelf pages
 * A book's genre list is built by accumulation: every genre shelf page it appears on adds that genre
-* Goodreads genre shelf pages are never re-scraped unless the override flag is set explicitly
+* Goodreads genre shelf pages are never re-scraped unless the override flag is set explicitly (the admin re-scrape migration for new shelf fields is such an explicit override)
 * Dataset only **grows** — books and raw genres are never deleted
 * Genres are never normalized automatically; only explicit admin-defined merges are applied — at query/display time, never to stored data, and any merge can be split back apart
 
@@ -54,6 +54,6 @@ The application prioritizes:
 ## Data Source
 
 * **Scraping source**: `https://www.goodreads.com/shelf/show/{genre}?page={n}`
-* All fields (title, author, avgRating, numRatings) are extracted from shelf pages
+* All fields (title, author, avgRating, numRatings, and since scraper v2 publishedYear, coverUrl, authorUrl and the per-genre shelved count) are extracted from shelf pages
 * Genre association comes from **which shelf page a book was found on**, not from the book itself
 * Existing dataset bootstrapped from `books_raw.jl` (~46k books) via one-time migration

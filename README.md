@@ -16,10 +16,11 @@ Most book discovery tools make you search for something specific. This flips tha
 - **Stack genre filters** — e.g. "fantasy" + "magic" − "romance" to narrow things down
 - **Search by title or author** — fuzzy matching, works on partial words
 - **Filter by average rating and number of ratings** — find acclaimed books or hidden gems
+- **Filter by publication year** — a from/to range, either end optional (e.g. everything before 1980, or 2023 onwards)
 - **One click to Goodreads** — every result links directly to its Goodreads page for reviews, editions, and more
 - **Works on any screen** — responsive layout with a genre drawer and card-based results on phones and tablets
 
-The dataset has **50,000+ books and growing**, sourced from Goodreads genre shelves. Genre variants (e.g. `science-fiction` vs `sci-fi`) can be merged from the admin panel — merges apply at display time, never rewrite the underlying data, and are fully reversible.
+The dataset has **130,000+ books and growing**, sourced from Goodreads genre shelves. Genre variants (e.g. `science-fiction` vs `sci-fi`) can be merged from the admin panel — merges apply at display time, never rewrite the underlying data, and are fully reversible.
 
 ---
 

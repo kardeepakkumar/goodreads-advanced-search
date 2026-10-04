@@ -126,6 +126,14 @@ describe('GET/POST /api/admin/jobs', () => {
     expect(opts).toEqual({ upsert: true })
   })
 
+  it('stamps new jobs with the current scraper version as manual jobs', async () => {
+    await jobsPOST(authed('http://localhost/api/admin/jobs', jsonInit('POST', { genre: 'fantasy' })))
+    const doc = scrapeJobs.insertOne.mock.calls[0][0]
+    expect(doc.scraperVersion).toBeInstanceOf(Int32)
+    expect(doc.scraperVersion.value).toBe(2)
+    expect(doc.kind).toBe('manual')
+  })
+
   it('defaults startPage=1 and maxPage=20', async () => {
     await jobsPOST(authed('http://localhost/api/admin/jobs', jsonInit('POST', { genre: 'x' })))
     const doc = scrapeJobs.insertOne.mock.calls[0][0]

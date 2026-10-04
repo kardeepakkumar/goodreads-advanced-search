@@ -18,6 +18,8 @@ function buildQueryString(filters: FilterState): string {
   if (filters.minRating > 0) p.set('minRating', String(filters.minRating))
   if (filters.maxRating < 5) p.set('maxRating', String(filters.maxRating))
   if (filters.minRatings > 0) p.set('minRatings', String(filters.minRatings))
+  if (filters.minYear !== null) p.set('minYear', String(filters.minYear))
+  if (filters.maxYear !== null) p.set('maxYear', String(filters.maxYear))
   p.set('sortBy', filters.sortBy)
   p.set('sortDir', filters.sortDir)
   p.set('page', String(filters.page))
@@ -67,6 +69,8 @@ export default function DiscoveryPage() {
     filters.minRating > 0 ||
     filters.maxRating < 5 ||
     filters.minRatings > 0 ||
+    filters.minYear !== null ||
+    filters.maxYear !== null ||
     filters.sortBy !== DEFAULT_FILTERS.sortBy ||
     filters.sortDir !== DEFAULT_FILTERS.sortDir
 

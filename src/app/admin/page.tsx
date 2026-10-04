@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppConfig, ScrapeJob } from '@/types'
+import FieldBackfillPanel from '@/components/FieldBackfillPanel'
 
 interface JobsResponse {
   jobs: ScrapeJob[]
@@ -281,6 +282,9 @@ export default function AdminPage() {
           </div>
         </section>
 
+        {/* ── Re-scrape for New Fields ───────────────────────────────────── */}
+        <FieldBackfillPanel onQueued={loadJobs} />
+
         {/* ── Genre Merges ───────────────────────────────────────────────── */}
         <section>
           <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">Genre Merges</h2>
@@ -438,7 +442,12 @@ export default function AdminPage() {
                   <tbody>
                     {jobs.map((job) => (
                       <tr key={job._id} className="border-b border-zinc-700/50 hover:bg-zinc-700/20">
-                        <td className="px-4 py-2.5 font-mono text-xs text-zinc-200">{job.genre}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-zinc-200">
+                          {job.genre}
+                          {job.kind === 'backfill' && (
+                            <span className="ml-2 font-sans text-[10px] uppercase tracking-wider text-zinc-500">re-scrape</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2.5"><StatusBadge status={job.status} /></td>
                         <td className="px-4 py-2.5 text-right text-zinc-400 text-xs">{job.currentPage}</td>
                         <td className="px-4 py-2.5 text-right text-zinc-400 text-xs">{job.pagesScraped}</td>
